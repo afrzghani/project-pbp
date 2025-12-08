@@ -25,9 +25,7 @@ class StoreNoteRequest extends FormRequest
             'file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:10240'], // Legacy single file
             'files' => ['nullable', 'array'], // Multiple files
             'files.*' => ['file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:10240'], // Validate each file
-            'source_type' => ['nullable', 'in:manual,upload,notion'],
-            'sync_with_notion' => ['nullable', 'boolean'],
-            'notion_page_url' => ['nullable', 'url'],
+            'source_type' => ['nullable', 'in:manual,upload'],
             'process_ai' => ['nullable', 'boolean'],
         ];
     }

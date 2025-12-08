@@ -46,7 +46,7 @@ class UserFactory extends Factory
             'two_factor_confirmed_at' => now(),
             'university_id' => $programStudy->university_id,
             'program_study_id' => $programStudy->id,
-            'cohort_year' => (string) fake()->numberBetween(2018, 2024),
+            'cohort_year' => (string) fake()->numberBetween(2019, 2025),
             'student_number' => fake()->numerify('24#######'),
             'profile_completed' => $profileCompleted,
             'profile_completed_at' => $profileCompleted ? now() : null,

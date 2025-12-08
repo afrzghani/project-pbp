@@ -44,7 +44,7 @@ export default function NoteEditor({ note, availableTags }: NoteEditorProps) {
     const [newTag, setNewTag] = useState('');
     const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
 
-    const notionConnected = integrations?.notion_connected ?? false;
+
 
     const form = useForm({
         title: note?.title ?? '',
@@ -57,8 +57,7 @@ export default function NoteEditor({ note, availableTags }: NoteEditorProps) {
         file: null as File | null,
         files: [] as File[], // Add support for multiple files
         source_type: note?.source_type ?? 'manual',
-        notion_page_url: note?.notion_page_url ?? '',
-        sync_with_notion: false,
+
         process_ai: false,
     });
 
@@ -99,11 +98,7 @@ export default function NoteEditor({ note, availableTags }: NoteEditorProps) {
         form.setData('content_text', contentText);
     }, [contentHtml, contentText, form]);
 
-    useEffect(() => {
-        if (!notionConnected && form.data.sync_with_notion) {
-            form.setData('sync_with_notion', false);
-        }
-    }, [notionConnected, form]);
+
 
     useEffect(() => {
         if (note && editor) {
@@ -369,37 +364,7 @@ export default function NoteEditor({ note, availableTags }: NoteEditorProps) {
                                         form={form}
                                     />
 
-                                    {/* Notion Sync */}
-                                    <div className="space-y-2">
-                                        <Label>Sync Notion</Label>
-                                        <Input
-                                            placeholder="https://www.notion.so/..."
-                                            value={form.data.notion_page_url}
-                                            onChange={(e) => form.setData('notion_page_url', e.target.value)}
-                                            disabled={!notionConnected}
-                                        />
-                                        <div className="flex items-center gap-2 text-sm">
-                                            <Checkbox
-                                                id="sync"
-                                                checked={form.data.sync_with_notion}
-                                                onCheckedChange={(value) =>
-                                                    notionConnected && form.setData('sync_with_notion', Boolean(value))
-                                                }
-                                                disabled={!notionConnected}
-                                            />
-                                            <Label htmlFor="sync" className="text-sm">
-                                                Tarik konten otomatis dari Notion
-                                            </Label>
-                                        </div>
-                                        {!notionConnected && (
-                                            <p className="text-xs text-muted-foreground">
-                                                Hubungkan Notion di{' '}
-                                                <Link href="/settings/profile" className="underline">
-                                                    pengaturan profil
-                                                </Link>
-                                            </p>
-                                        )}
-                                    </div>
+
 
                                     {/* AI Processing */}
                                     <div className="flex items-center gap-2 rounded-md border p-3">

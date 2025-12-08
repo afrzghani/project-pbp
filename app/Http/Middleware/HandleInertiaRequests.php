@@ -37,24 +37,19 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
+        $quotes = [
+            'Pendidikan adalah senjata paling mematikan di dunia, karena dengan pendidikan, Anda dapat mengubah dunia. - Nelson Mandela',
+            'Hiduplah seolah engkau mati besok. Belajarlah seolah engkau hidup selamanya. - Mahatma Gandhi',
+            'Akar pendidikan itu pahit, tapi buahnya manis. - Aristoteles',
+            'Tujuan pendidikan itu untuk mempertajam kecerdasan, memperkukuh kemauan serta memperhalus perasaan. - Tan Malaka',
+            'Belajar tanpa berpikir itu tidaklah berguna, tapi berpikir tanpa belajar itu sangatlah berbahaya! - Soekarno',
+            'Pendidikan bukan persiapan untuk hidup. Pendidikan adalah hidup itu sendiri. - John Dewey',
+            'Seseorang yang berhenti belajar adalah orang lanjut usia, meskipun umurnya masih remaja. - Henry Ford',
+        ];
+
+        [$message, $author] = str($quotes[array_rand($quotes)])->explode('-');
         $user = $request->user();
-        $notionConnected = false;
-        $notionWorkspace = null;
 
-        if ($user && Schema::hasTable('notion_connections')) {
-            $notionConnection = $user->relationLoaded('notionConnection')
-                ? $user->notionConnection
-                : $user->notionConnection()->select(['workspace_name', 'workspace_icon'])->first();
-
-            if ($notionConnection) {
-                $notionConnected = true;
-                $notionWorkspace = [
-                    'name' => $notionConnection->workspace_name,
-                    'icon' => $notionConnection->workspace_icon,
-                ];
-            }
-        }
 
         return [
             ...parent::share($request),
@@ -64,10 +59,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $user,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
-            'integrations' => [
-                'notion_connected' => $notionConnected,
-                'notion_workspace' => $notionWorkspace,
-            ],
+
         ];
     }
 }

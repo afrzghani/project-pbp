@@ -64,8 +64,7 @@ export default function Profile({
     const [selectedProgramStudyId, setSelectedProgramStudyId] = useState<string>(
         auth.user.program_study_id ? String(auth.user.program_study_id) : ''
     );
-    const notionConnected = integrations?.notion_connected ?? false;
-    const notionWorkspace = integrations?.notion_workspace ?? null;
+
 
     const universitiesById = useMemo(() => {
         return new Map(
@@ -245,73 +244,73 @@ export default function Profile({
                                         <SelectContent>
                                             {isUnesaContext
                                                 ? unesaPrograms.map(
-                                                      (program) => (
-                                                          <SelectItem
-                                                              key={program.id}
-                                                              value={String(
-                                                                  program.id
-                                                              )}
-                                                          >
-                                                              {
-                                                                  program.nama
-                                                              }
-                                                          </SelectItem>
-                                                      )
-                                                  )
+                                                    (program) => (
+                                                        <SelectItem
+                                                            key={program.id}
+                                                            value={String(
+                                                                program.id
+                                                            )}
+                                                        >
+                                                            {
+                                                                program.nama
+                                                            }
+                                                        </SelectItem>
+                                                    )
+                                                )
                                                 : groupedPrograms.map(
-                                                      (group) => {
-                                                          const university =
-                                                              universitiesById.get(
-                                                                  group.universityId
-                                                              );
+                                                    (group) => {
+                                                        const university =
+                                                            universitiesById.get(
+                                                                group.universityId
+                                                            );
 
-                                                          if (!university) {
-                                                              return null;
-                                                          }
+                                                        if (!university) {
+                                                            return null;
+                                                        }
 
-                                                          return (
-                                                              <SelectGroup
-                                                                  key={
-                                                                      university.id
-                                                                  }
-                                                              >
-                                                                  <SelectLabel>
-                                                                      {
-                                                                          university.nama
-                                                                      }
-                                                                  </SelectLabel>
+                                                        return (
+                                                            <SelectGroup
+                                                                key={
+                                                                    university.id
+                                                                }
+                                                            >
+                                                                <SelectLabel>
+                                                                    {
+                                                                        university.nama
+                                                                    }
+                                                                </SelectLabel>
 
-                                                                  {group.programs.map(
-                                                                      (
-                                                                          program
-                                                                      ) => (
-                                                                          <SelectItem
-                                                                              key={
-                                                                                  program.id
-                                                                              }
-                                                                              value={String(
-                                                                                  program.id
-                                                                              )}
-                                                                          >
-                                                                              <span className="flex flex-col text-start">
-                                                                                  {
-                                                                                      program.nama
-                                                                                  }
-                                                                                  {program.jenjang && (
-                                                                                      <small className="text-xs text-muted-foreground">
-                                                                                          {
-                                                                                              program.jenjang
-                                                                                          }
-                                                                                      </small>
-                                                                                  )}
-                                                                              </span>
-                                                                          </SelectItem>
-                                                                      )
-                                                                  )}
-                                                              </SelectGroup>
-                                                          );
-                                                      }
-                                                  )}
+                                                                {group.programs.map(
+                                                                    (
+                                                                        program
+                                                                    ) => (
+                                                                        <SelectItem
+                                                                            key={
+                                                                                program.id
+                                                                            }
+                                                                            value={String(
+                                                                                program.id
+                                                                            )}
+                                                                        >
+                                                                            <span className="flex flex-col text-start">
+                                                                                {
+                                                                                    program.nama
+                                                                                }
+                                                                                {program.jenjang && (
+                                                                                    <small className="text-xs text-muted-foreground">
+                                                                                        {
+                                                                                            program.jenjang
+                                                                                        }
+                                                                                    </small>
+                                                                                )}
+                                                                            </span>
+                                                                        </SelectItem>
+                                                                    )
+                                                                )}
+                                                            </SelectGroup>
+                                                        );
+                                                    }
+                                                )}
                                         </SelectContent>
                                     </Select>
 
@@ -403,12 +402,12 @@ export default function Profile({
 
                                             {status ===
                                                 'verification-link-sent' && (
-                                                <div className="mt-2 text-sm font-medium text-green-600">
-                                                    A new verification link has
-                                                    been sent to your email
-                                                    address.
-                                                </div>
-                                            )}
+                                                    <div className="mt-2 text-sm font-medium text-green-600">
+                                                        A new verification link has
+                                                        been sent to your email
+                                                        address.
+                                                    </div>
+                                                )}
                                         </div>
                                     )}
 
@@ -437,65 +436,7 @@ export default function Profile({
                     </Form>
                 </div>
 
-                <div className="space-y-4 rounded-xl border border-border p-6">
-                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                        <div>
-                            <h3 className="text-lg font-semibold">
-                                Integrasi Notion
-                            </h3>
-                            <p className="text-sm text-muted-foreground">
-                                Hubungkan akun Notion untuk menarik konten halaman
-                                langsung ke editor catatan.
-                            </p>
-                            {notionConnected && notionWorkspace && (
-                                <p className="text-xs text-muted-foreground">
-                                    Workspace:{' '}
-                                    <span className="font-medium">
-                                        {notionWorkspace.name ?? 'Tidak diketahui'}
-                                    </span>
-                                </p>
-                            )}
-                        </div>
-                        <Badge
-                            variant={notionConnected ? 'default' : 'secondary'}
-                        >
-                            {notionConnected ? 'Terhubung' : 'Belum terhubung'}
-                        </Badge>
-                    </div>
 
-                    <div className="flex flex-wrap gap-3">
-                        {notionConnected ? (
-                            <>
-                                <Button
-                                    type="button"
-                                    variant="secondary"
-                                    onClick={() =>
-                                        router.delete('/notion/disconnect', {
-                                            preserveScroll: true,
-                                        })
-                                    }
-                                >
-                                    Putuskan koneksi
-                                </Button>
-                                <p className="text-sm text-muted-foreground">
-                                    Setelah memutus, Anda perlu menghubungkan ulang
-                                    sebelum dapat melakukan sinkronisasi catatan.
-                                </p>
-                            </>
-                        ) : (
-                            <>
-                                <Button asChild>
-                                    <a href="/notion/connect">
-                                        Hubungkan Notion
-                                    </a>
-                                </Button>
-                                <p className="text-sm text-muted-foreground">
-                                    Anda akan diarahkan ke halaman izin resmi Notion.
-                                </p>
-                            </>
-                        )}
-                    </div>
-                </div>
 
                 <DeleteUser />
             </SettingsLayout>

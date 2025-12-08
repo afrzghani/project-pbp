@@ -325,7 +325,7 @@ class NoteController extends Controller
         try {
 
             if ($note->file_path) {
-                Storage::disk('public')->delete($note->file_path);
+                Storage::disk(config('filesystems.default'))->delete($note->file_path);
             }
 
             $note->tags()->detach();
@@ -377,7 +377,7 @@ class NoteController extends Controller
         // Handle multiple files
         if ($request->hasFile('files')) {
             foreach ($request->file('files') as $file) {
-                $path = $file->store('notes/'.$request->user()->id, 'public');
+                $path = $file->store('notes/'.$request->user()->id, config('filesystems.default'));
                 
                 $note->attachments()->create([
                     'file_path' => $path,
@@ -397,7 +397,7 @@ class NoteController extends Controller
         // Handle single file (legacy support or single upload)
         if ($request->hasFile('file')) {
             $file = $request->file('file');
-            $path = $file->store('notes/'.$request->user()->id, 'public');
+            $path = $file->store('notes/'.$request->user()->id, config('filesystems.default'));
 
             // Create attachment record
             $note->attachments()->create([

@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react';
-
 import QuickStats from '@/components/quick-stats';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/app-layout'; //SAMPING KIRI
 import { dashboard } from '@/routes';
-import { type BreadcrumbItem, type DashboardProps, type PaginationLink, type FeedNote } from '@/types';
+import { type BreadcrumbItem, type PaginationLink, type FeedNote, type StatsPayload } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import FeedCard from '@/components/feed/feed-card';
-import CommentsSheet from '@/components/comments/comments-sheet';
+import { QuoteBanner } from '@/components/dashboard/quote-banner';
+import { NoteGrid } from '@/components/dashboard/note-grid';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -22,111 +21,45 @@ const csrfToken =
     document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
         ?.content ?? '';
 
-export default function Dashboard({ stats, feed, filters }: DashboardProps) {
-    const [searchValue, setSearchValue] = useState(filters.search ?? '');
-    const [commentsNote, setCommentsNote] = useState<FeedNote | null>(null);
+interface DashboardPageProps {
+    stats: StatsPayload;
+    recent_notes: any[];
+    bookmarked_notes: any[];
+}
 
-    useEffect(() => {
-        const timer = window.setTimeout(() => {
-            setSearchValue(filters.search ?? '');
-        }, 0);
-
-        return () => window.clearTimeout(timer);
-    }, [filters.search]);
-
-    const handleSearchSubmit = (event: React.FormEvent) => {
-        event.preventDefault();
-        const query =
-            searchValue.trim().length > 0 ? { search: searchValue.trim() } : {};
-
-        router.get(dashboard().url, query, {
-            replace: true,
-            preserveScroll: true,
-        });
-    };
-
-    const resetSearch = () => {
-        setSearchValue('');
-        router.get(dashboard().url, {}, { replace: true, preserveScroll: true });
-    };
-
+export default function Dashboard({ stats, recent_notes, bookmarked_notes }: DashboardPageProps) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
-            <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
+            <div className="flex h-full flex-1 flex-col gap-8 overflow-x-auto rounded-xl p-4 md:p-6">
+
+                {/* 1. Quote Banner */}
+                <QuoteBanner />
+
+                {/* 2. Quick Stats */}
                 <QuickStats
                     streak={stats.streak}
                     notesThisWeek={stats.notes_this_week}
                     leaderboard={stats.leaderboard}
                 />
 
-                <section>
-                    <Card>
-                        <CardContent className="space-y-4 p-4">
-                            <div className="flex flex-col gap-4">
-                                <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-                                    <div className="space-y-1">
-                                        <h2 className="text-xl font-semibold">Feed Catatan</h2>
-                                        <p className="text-sm text-muted-foreground">
-                                            Cari catatan menarik dari mahasiswa lain.
-                                        </p>
-                                    </div>
-                                    <div className="flex flex-col gap-2 md:w-[360px]">
-                                        <form
-                                            onSubmit={handleSearchSubmit}
-                                            className="flex flex-col gap-2 md:flex-row"
-                                        >
-                                            <Input
-                                                id="search"
-                                                placeholder="Cari judul atau ringkasan..."
-                                                value={searchValue}
-                                                onChange={(e) => setSearchValue(e.target.value)}
-                                            />
-                                            <div className="flex gap-2">
-                                                <Button type="submit" size="sm">
-                                                    Cari
-                                                </Button>
-                                                {searchValue.trim().length > 0 && (
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={resetSearch}
-                                                    >
-                                                        Reset
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        </form>
-                                        <Button variant="outline" size="sm" asChild>
-                                            <Link href="/notes/create">+ Catatan Baru</Link>
-                                        </Button>
-                                    </div>
-                                </div>
-                            </div>
+                <div className="space-y-8">
+                    {/* 3. Recent Notes */}
+                    <NoteGrid
+                        title="Terakhir Dilihat"
+                        notes={recent_notes}
+                        emptyMessage="Belum ada catatan yang dilihat baru-baru ini."
+                    />
 
-                            {feed.data.length === 0 ? (
-                                <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                                    Belum ada catatan sesuai pencarian. Coba kata kunci lain atau bagikan catatan pertamamu!
-                                </p>
-                            ) : (
-                                <div className="space-y-4">
-                                    {feed.data.map((note) => (
-                                        <FeedCard
-                                            key={note.id}
-                                            note={note}
-                                            onShowComments={() => setCommentsNote(note)}
-                                        />
-                                    ))}
-                                    <Pagination links={feed.links} />
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                </section>
+                    {/* 4. Bookmarked Notes */}
+                    <NoteGrid
+                        title="Disimpan"
+                        notes={bookmarked_notes}
+                        actionLink={{ label: "Selengkapnya", href: "/notes?filter=bookmarked" }}
+                        emptyMessage="Belum ada catatan yang disimpan."
+                    />
+                </div>
             </div>
-
-            <CommentsSheet note={commentsNote} onOpenChange={setCommentsNote} />
         </AppLayout>
     );
 }

@@ -111,13 +111,7 @@ class User extends Authenticatable
         return $this->hasMany(NoteComment::class);
     }
 
-    /**
-     * @return HasOne<NotionConnection>
-     */
-    public function notionConnection(): HasOne
-    {
-        return $this->hasOne(NotionConnection::class);
-    }
+
 
     /**
      * @return HasMany<NoteBookmark>

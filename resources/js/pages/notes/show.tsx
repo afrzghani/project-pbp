@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
 import { type BreadcrumbItem } from '@/types';
-import { Edit, Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Shuffle, RefreshCcw, Flame, Calendar, Eye, EyeOff, RotateCw, ArrowLeft, Tag as TagIcon, Heart, MessageCircle, Bookmark, FileText, X } from 'lucide-react';
+import { Edit, Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Shuffle, RefreshCcw, Flame, Layers, Calendar, Eye, EyeOff, RotateCw, ArrowLeft, Tag as TagIcon, Heart, MessageCircle, Bookmark, FileText, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -415,12 +415,12 @@ export default function NoteShow({ note, isOwner = false }: NoteShowProps) {
                                     <CardHeader className="cursor-pointer transition-colors hover:bg-muted/50">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
-                                                <div className="rounded-full bg-orange-100 p-2 dark:bg-orange-900/30">
-                                                    <Flame className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                                                <div className="rounded-full bg-blue-100 p-2 dark:bg-blue-900/30">
+                                                    <Layers className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                                                 </div>
                                                 <div>
                                                     <CardTitle className="text-lg">
-                                                        Flashcard AI
+                                                        Flashcard
                                                     </CardTitle>
                                                     <CardDescription>
                                                         {flashcards.length} kartu tersedia • Klik untuk {flashcardsOpen ? 'menutup' : 'membuka'}
@@ -494,12 +494,10 @@ export default function NoteShow({ note, isOwner = false }: NoteShowProps) {
                                             </Card>
                                         </div>
 
-                                        {/* Keyboard Hint */}
                                         <p className="text-center text-xs text-muted-foreground">
-                                            💡 Gunakan panah kiri/kanan untuk navigasi, Space/Enter untuk flip
+                                            Gunakan panah kiri/kanan untuk navigasi, Space/Enter untuk flip
                                         </p>
 
-                                        {/* Controls */}
                                         <div className="flex flex-wrap items-center justify-center gap-2">
                                             <Button
                                                 variant="outline"
@@ -568,7 +566,6 @@ export default function NoteShow({ note, isOwner = false }: NoteShowProps) {
                     )}
 
 
-                    {/* Legacy Single Attachment */}
                     {note.file_url && !note.attachments?.length && (
                         <Card>
                             <CardHeader>
@@ -637,7 +634,6 @@ export default function NoteShow({ note, isOwner = false }: NoteShowProps) {
                         </Card>
                     )}
 
-                    {/* Multiple Attachments */}
                     {note.attachments && note.attachments.length > 0 && (
                         <Card>
                             <CardHeader>
@@ -743,7 +739,7 @@ export default function NoteShow({ note, isOwner = false }: NoteShowProps) {
                                 </div>
                             </CardContent>
                         </Card>
-                    )}        {/* Navigation */}
+                    )}   
                     <div className="flex items-center justify-between pt-4">
                         <Button variant="outline" asChild>
                             <Link href={isOwner ? "/notes" : "/dashboard"}>

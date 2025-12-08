@@ -26,8 +26,22 @@ class DashboardController extends Controller
 
         $leaderboard = $this->getProgramStudyLeaderboard($user);
 
-        $filters = $this->resolveFilters($request, $user);
-        $feed = $this->buildFeed($request, $filters);
+        // Recent Notes (Proxy: Recently updated by user)
+        $recentNotes = Note::where('user_id', $user->id)
+            ->orderByDesc('updated_at')
+            ->limit(3)
+            ->get()
+            ->map(fn ($note) => $this->transformNote($note));
+
+        // Bookmarked Notes
+        $bookmarkedNotes = Note::whereHas('bookmarks', function ($query) use ($user) {
+            $query->where('user_id', $user->id);
+        })
+            ->with(['user', 'tags']) // Eager load relationships
+            ->orderByDesc('created_at') // Or bookmark timestamp if available via pivot
+            ->limit(3)
+            ->get()
+            ->map(fn ($note) => $this->transformNote($note));
 
         return Inertia::render('dashboard', [
             'stats' => [
@@ -35,6 +49,18 @@ class DashboardController extends Controller
                 'notes_this_week' => $notesThisWeek,
                 'leaderboard' => $leaderboard,
             ],
+            'recent_notes' => $recentNotes,
+            'bookmarked_notes' => $bookmarkedNotes,
+        ]);
+    }
+
+    public function explore(Request $request): Response
+    {
+        $user = $request->user();
+        $filters = $this->resolveFilters($request, $user);
+        $feed = $this->buildFeed($request, $filters);
+
+        return Inertia::render('explore', [
             'feed' => $feed,
             'filters' => $filters,
         ]);
@@ -178,5 +204,34 @@ class DashboardController extends Controller
                 'published_at' => optional($note->published_at)->toIso8601String(),
             ];
         });
+    }
+    private function transformNote(Note $note): array
+    {
+        return [
+            'id' => $note->id,
+            'title' => $note->title,
+            'excerpt' => $note->excerpt ?: Str::limit($note->content_text ?? '', 140),
+            'ai_summary' => $note->ai_summary,
+            'ai_flashcards_count' => count($note->ai_flashcards ?? []),
+            'user' => [
+                'id' => $note->user->id,
+                'name' => $note->user->name,
+                'program_study' => $note->user->programStudy?->nama,
+                'university' => $note->user->university?->nama,
+                'university_short' => $note->user->university?->singkatan,
+            ],
+            'tags' => $note->tags->map(fn ($tag) => [
+                'id' => $tag->id,
+                'name' => $tag->name,
+                'slug' => $tag->slug,
+            ]),
+            'liked' => false,
+            'likes_count' => $note->likes_count ?? 0,
+            'comments_count' => $note->comments_count ?? 0,
+            'bookmarked' => true,
+            'bookmarks_count' => $note->bookmarks_count ?? 0,
+            'published_at' => optional($note->published_at)->toIso8601String(),
+            'updated_at' => $note->updated_at->diffForHumans(),
+        ];
     }
 }

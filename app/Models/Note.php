@@ -33,7 +33,7 @@ class Note extends Model
         'ai_status',
         'ai_requested_at',
         'ai_completed_at',
-        'notion_page_url',
+
         'sync_status',
         'synced_at',
         'published_at',

@@ -261,7 +261,7 @@ class DatabaseSeeder extends Seeder
                 'singkatan' => 'UNESA',
                 'kota' => 'Surabaya',
                 'domain' => 'unesa.ac.id',
-                'domain_aliases' => ['student.unesa.ac.id'],
+                'domain_aliases' => ['mhs.unesa.ac.id'],
                 'programs' => [
                     ['nama' => 'Pendidikan Matematika', 'jenjang' => 'S1'],
                     ['nama' => 'Pendidikan Fisika', 'jenjang' => 'S1'],

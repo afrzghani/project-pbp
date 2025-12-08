@@ -32,14 +32,7 @@ export interface SharedData {
         bannerStyle?: 'success' | 'warning' | 'danger' | 'info';
         [key: string]: unknown;
     };
-    integrations?: {
-        notion_connected: boolean;
-        notion_workspace?: {
-            name?: string | null;
-            icon?: string | null;
-        } | null;
-        [key: string]: unknown;
-    };
+
     [key: string]: unknown;
 }
 
@@ -91,7 +84,7 @@ export interface NoteResource {
     file_original_name?: string | null;
     file_url?: string | null;
     source_type: string;
-    notion_page_url?: string | null;
+
     sync_status?: string | null;
     ai_summary?: string | null;
     ai_status?: string | null;
