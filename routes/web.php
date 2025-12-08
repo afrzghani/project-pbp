@@ -1,13 +1,14 @@
 <?php
 
+use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\DashboardController;
-
 use App\Http\Controllers\ImageUploadController;
-
+use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\NoteCommentController;
 use App\Http\Controllers\NoteBookmarkController;
 use App\Http\Controllers\NoteLikeController;
+use App\Http\Controllers\ProfilePageController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -23,6 +24,10 @@ Route::get('/', function () {
 Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('explore', [DashboardController::class, 'explore'])->name('explore');
+    Route::get('bookmarks', [BookmarkController::class, 'index'])->name('bookmarks.index');
+    Route::get('leaderboard', [LeaderboardController::class, 'index'])->name('leaderboard.index');
+    Route::get('u/me', [ProfilePageController::class, 'me'])->name('profile.me');
+    Route::get('u/{user}', [ProfilePageController::class, 'show'])->name('profile.show');
 
     Route::post('notes/{note}/like', [NoteLikeController::class, 'store'])->name('notes.like');
     Route::delete('notes/{note}/like', [NoteLikeController::class, 'destroy'])->name('notes.like.destroy');

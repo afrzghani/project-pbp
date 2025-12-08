@@ -231,6 +231,7 @@ class DashboardController extends Controller
             'bookmarked' => true,
             'bookmarks_count' => $note->bookmarks_count ?? 0,
             'published_at' => optional($note->published_at)->toIso8601String(),
+            'created_at' => $note->created_at->toIso8601String(),
             'updated_at' => $note->updated_at->diffForHumans(),
         ];
     }

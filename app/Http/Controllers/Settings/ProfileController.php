@@ -26,12 +26,12 @@ class ProfileController extends Controller
             'academicOptions' => [
                 'universities' => University::query()
                     ->select(['id', 'nama', 'slug', 'singkatan'])
-                    ->where('aktif', true)
+                    ->whereRaw('aktif IS TRUE')
                     ->orderBy('nama')
                     ->get(),
                 'programStudies' => ProgramStudy::query()
                     ->select(['id', 'university_id', 'nama', 'slug', 'jenjang'])
-                    ->where('aktif', true)
+                    ->whereRaw('aktif IS TRUE')
                     ->orderBy('nama')
                     ->get(),
             ],
@@ -57,7 +57,7 @@ class ProfileController extends Controller
         $shouldMarkCompleted = filled($data['program_study_id']) && filled($data['cohort_year']);
 
         if ($shouldMarkCompleted && ! $user->profile_completed) {
-            $data['profile_completed'] = true;
+            $data['profile_completed'] = 'true';
             $data['profile_completed_at'] = now();
         }
 

@@ -18,7 +18,7 @@ class UniversityController extends Controller
 
         $universities = University::query()
             ->select(['id', 'nama', 'slug', 'singkatan', 'kota', 'domain'])
-            ->where('aktif', true)
+            ->whereRaw('aktif IS TRUE')
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($inner) use ($search) {
                     $inner->where('nama', 'like', "%{$search}%")

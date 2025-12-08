@@ -31,7 +31,7 @@ class ProfileUpdateRequest extends FormRequest
 
             'program_study_id' => [
                 'required',
-                Rule::exists('program_studies', 'id')->where('aktif', true),
+                Rule::exists('program_studies', 'id')->where(fn ($q) => $q->whereRaw('aktif IS TRUE')),
             ],
 
             'cohort_year' => ['required', 'regex:/^(19|20)\d{2}$/'],

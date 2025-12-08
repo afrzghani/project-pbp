@@ -5,13 +5,13 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, FileText, Trophy, User, Compass } from 'lucide-react';
+import { BookOpen, Folder, LayoutGrid, FileText, Trophy, User, Compass, Bookmark } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
     {
         title: 'Dashboard',
-        href: dashboard(),
+        href: '/dashboard',
         icon: LayoutGrid,
     },
     {
@@ -25,13 +25,18 @@ const mainNavItems: NavItem[] = [
         icon: FileText,
     },
     {
+        title: 'Bookmarks',
+        href: '/bookmarks',
+        icon: BookOpen, // Or Bookmark if imported
+    },
+    {
         title: 'Leaderboard',
-        href: '#',
+        href: '/leaderboard',
         icon: Trophy,
     },
     {
         title: 'Profil',
-        href: '/settings/profile',
+        href: '/u/me',
         icon: User,
     },
 ];
@@ -47,7 +52,7 @@ export function AppSidebar() {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href={dashboard()} prefetch>
+                            <Link href="/dashboard" prefetch>
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>

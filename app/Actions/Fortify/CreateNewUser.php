@@ -59,7 +59,7 @@ class CreateNewUser implements CreatesNewUsers
             'email' => $input['email'],
             'password' => $input['password'],
             'university_id' => $university->id,
-            'profile_completed' => false,
+            'profile_completed' => 'false',
             'profile_meta' => [],
         ]);
     }

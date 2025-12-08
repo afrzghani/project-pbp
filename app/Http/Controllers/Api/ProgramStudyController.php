@@ -50,7 +50,7 @@ class ProgramStudyController extends Controller
         $universityId = $request->integer('university_id');
 
         return ProgramStudy::query()
-            ->where('aktif', true)
+            ->whereRaw('aktif IS TRUE')
             ->when($universityId, fn ($query) => $query->where('university_id', $universityId))
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($inner) use ($search) {

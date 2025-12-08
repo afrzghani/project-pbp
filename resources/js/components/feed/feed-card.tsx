@@ -73,51 +73,50 @@ export default function FeedCard({ note, onShowComments }: { note: FeedNoteType;
     };
 
     return (
-        <Link
-            href={`/notes/${note.id}`}
-            className="group block rounded-lg border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
-        >
-            <header className="flex flex-col gap-2">
-                <div className="flex items-start justify-between gap-3">
-                    <span className="flex-1 text-lg font-semibold text-primary group-hover:underline transition-colors">
-                        {note.title}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                        {note.published_at
-                            ? new Date(note.published_at).toLocaleDateString('id-ID', {
-                                day: 'numeric',
-                                month: 'short',
-                                year: 'numeric',
-                            })
-                            : ''}
-                    </span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                    {note.user.name} • {note.user.program_study ?? 'Program tidak tersedia'} •{' '}
-                    {note.user.university_short ?? note.user.university ?? 'Kampus'}
-                </p>
-            </header>
+        <div className="group block rounded-lg border bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
+            <Link href={`/notes/${note.id}`}>
+                <header className="flex flex-col gap-2">
+                    <div className="flex items-start justify-between gap-3">
+                        <span className="flex-1 text-lg font-semibold text-primary group-hover:underline transition-colors">
+                            {note.title}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                            {note.published_at
+                                ? new Date(note.published_at).toLocaleDateString('id-ID', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    year: 'numeric',
+                                })
+                                : ''}
+                        </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                        {note.user.name} • {note.user.program_study ?? 'Program tidak tersedia'} •{' '}
+                        {note.user.university_short ?? note.user.university ?? 'Kampus'}
+                    </p>
+                </header>
 
-            <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted-foreground">{summary}</p>
+                <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted-foreground">{summary}</p>
 
-            {note.tags.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                    {note.tags.map((tag) => (
-                        <Badge key={tag.id} variant="secondary">
-                            #{tag.name}
-                        </Badge>
-                    ))}
-                </div>
-            )}
+                {note.tags.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                        {note.tags.map((tag) => (
+                            <Badge key={tag.id} variant="secondary">
+                                #{tag.name}
+                            </Badge>
+                        ))}
+                    </div>
+                )}
 
-            {note.ai_flashcards_count && note.ai_flashcards_count > 0 && (
-                <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-                    <Flame className="h-3.5 w-3.5 text-orange-500" />
-                    <span>{note.ai_flashcards_count} flashcard tersedia</span>
-                </div>
-            )}
+                {note.ai_flashcards_count && note.ai_flashcards_count > 0 && (
+                    <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                        <Flame className="h-3.5 w-3.5 text-orange-500" />
+                        <span>{note.ai_flashcards_count} flashcard tersedia</span>
+                    </div>
+                )}
+            </Link>
 
-            <footer className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-3 relative z-10" onClick={(e) => e.stopPropagation()}>
+            <footer className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-3 relative z-10">
                 <div className="flex flex-wrap items-center gap-3 text-sm">
                     <Button
                         type="button"
@@ -174,14 +173,15 @@ export default function FeedCard({ note, onShowComments }: { note: FeedNoteType;
                     size="sm"
                     asChild
                     className="gap-2 text-primary hover:text-primary/90"
-                    onClick={(e) => e.stopPropagation()}
                 >
-                    <span>
-                        Baca Selengkapnya
-                        <ArrowRight className="h-4 w-4 inline ml-2" />
-                    </span>
+                    <Link href={`/notes/${note.id}`}>
+                        <span>
+                            Baca Selengkapnya
+                            <ArrowRight className="h-4 w-4 inline ml-2" />
+                        </span>
+                    </Link>
                 </Button>
             </footer>
-        </Link>
+        </div>
     );
 }
