@@ -41,6 +41,7 @@ export interface User {
     name: string;
     email: string;
     avatar?: string;
+    avatar_url?: string | null;
     email_verified_at: string | null;
     two_factor_enabled?: boolean;
     profile_completed?: boolean;
@@ -114,6 +115,7 @@ export interface StatsPayload {
 
 export interface FeedNote {
     id: number;
+    slug: string;
     title: string;
     excerpt?: string | null;
     ai_summary?: string | null;

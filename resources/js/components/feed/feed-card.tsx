@@ -6,10 +6,21 @@ import { Loader2, Heart, Bookmark, MessageCircle, Flame, ArrowRight } from 'luci
 import { cn } from '@/lib/utils';
 import { type FeedNote as FeedNoteType } from '@/types';
 
-const getCsrfToken = () =>
-    document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+const getCsrfToken = () => {
+    const metaToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
+    if (metaToken) return metaToken;
 
-export default function FeedCard({ note, onShowComments }: { note: FeedNoteType; onShowComments: () => void; }) {
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+        const [name, value] = cookie.trim().split('=');
+        if (name === 'XSRF-TOKEN') {
+            return decodeURIComponent(value);
+        }
+    }
+    return '';
+};
+
+export default function FeedCard({ note }: { note: FeedNoteType }) {
     const [liked, setLiked] = useState(note.liked);
     const [likesCount, setLikesCount] = useState(note.likes_count);
     const [bookmarked, setBookmarked] = useState(note.bookmarked);
@@ -21,10 +32,10 @@ export default function FeedCard({ note, onShowComments }: { note: FeedNoteType;
     const toggleLike = async () => {
         setPending(true);
         try {
-            const response = await fetch(`/notes/${note.id}/like`, {
+            const response = await fetch(`/notes/${note.slug}/like`, {
                 method: liked ? 'DELETE' : 'POST',
                 headers: {
-                    'X-CSRF-TOKEN': getCsrfToken(),
+                    'X-XSRF-TOKEN': getCsrfToken(),
                     Accept: 'application/json',
                 },
             });
@@ -45,10 +56,10 @@ export default function FeedCard({ note, onShowComments }: { note: FeedNoteType;
     const toggleBookmark = async () => {
         setPending(true);
         try {
-            const response = await fetch(`/notes/${note.id}/bookmark`, {
+            const response = await fetch(`/notes/${note.slug}/bookmark`, {
                 method: bookmarked ? 'DELETE' : 'POST',
                 headers: {
-                    'X-CSRF-TOKEN': getCsrfToken(),
+                    'X-XSRF-TOKEN': getCsrfToken(),
                     Accept: 'application/json',
                 },
             });
@@ -74,7 +85,7 @@ export default function FeedCard({ note, onShowComments }: { note: FeedNoteType;
 
     return (
         <div className="group block rounded-lg border bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
-            <Link href={`/notes/${note.id}`}>
+            <Link href={`/notes/${note.slug}`}>
                 <header className="flex flex-col gap-2">
                     <div className="flex items-start justify-between gap-3">
                         <span className="flex-1 text-lg font-semibold text-primary group-hover:underline transition-colors">
@@ -138,19 +149,10 @@ export default function FeedCard({ note, onShowComments }: { note: FeedNoteType;
                         {likesCount}
                     </Button>
 
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="gap-2"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onShowComments();
-                        }}
-                    >
+                    <span className="inline-flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground">
                         <MessageCircle className="h-4 w-4" />
                         {note.comments_count}
-                    </Button>
+                    </span>
 
                     <Button
                         type="button"
@@ -174,7 +176,7 @@ export default function FeedCard({ note, onShowComments }: { note: FeedNoteType;
                     asChild
                     className="gap-2 text-primary hover:text-primary/90"
                 >
-                    <Link href={`/notes/${note.id}`}>
+                    <Link href={`/notes/${note.slug}`}>
                         <span>
                             Baca Selengkapnya
                             <ArrowRight className="h-4 w-4 inline ml-2" />

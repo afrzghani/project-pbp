@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Note;
+use App\Models\Notification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -12,9 +13,18 @@ class NoteLikeController extends Controller
     {
         $this->ensureInteractable($request, $note);
 
-        $note->likes()->firstOrCreate([
+        $like = $note->likes()->firstOrCreate([
             'user_id' => $request->user()->id,
         ]);
+
+        // Buat notifikasi jika like baru (bukan duplicate)
+        if ($like->wasRecentlyCreated) {
+            Notification::createForLike(
+                $note->user_id,
+                $request->user()->id,
+                $note->id
+            );
+        }
 
         return response()->json([
             'liked' => true,

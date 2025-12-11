@@ -29,7 +29,10 @@ class ProfilePageController extends Controller
             ->get();
 
         return Inertia::render('profile/show', [
-            'profileUser' => $user,
+            'profileUser' => array_merge($user->toArray(), [
+                'avatar_url' => $user->avatar_url,
+                'acronym' => strtoupper(substr($user->name, 0, 2)),
+            ]),
             'stats' => [
                 'notes_count' => $user->notes_count,
             ],

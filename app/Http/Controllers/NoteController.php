@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Config;
 use App\Models\ActivityLog;
 use App\Models\Note;
 use App\Models\NoteTag;
+use App\Models\NoteView;
 use App\Models\User;
 use App\Services\Pdf\PdfTextExtractor;
 use Illuminate\Http\RedirectResponse;
@@ -32,6 +33,7 @@ class NoteController extends Controller
             ->through(function (Note $note) {
                 return [
                     'id' => $note->id,
+                    'slug' => $note->slug,
                     'title' => $note->title,
                     'status' => $note->status,
                     'visibility' => $note->visibility,
@@ -72,6 +74,9 @@ class NoteController extends Controller
                     'bookmarks as bookmarked_by_user' => fn ($query) => $query->where('user_id', $user->id),
                 ]);
                 
+                // Track view
+                $this->recordNoteView($user->id, $note->id);
+                
                 Log::info('Rendering note for owner', ['note_id' => $note->id]);
                 
                 return Inertia::render('notes/show', [
@@ -88,6 +93,9 @@ class NoteController extends Controller
                     'likes as liked_by_user' => fn ($query) => $query->where('user_id', $user->id),
                     'bookmarks as bookmarked_by_user' => fn ($query) => $query->where('user_id', $user->id),
                 ]);
+                
+                // Track view
+                $this->recordNoteView($user->id, $note->id);
                 
                 Log::info('Rendering public note', ['note_id' => $note->id]);
                 
@@ -499,6 +507,7 @@ class NoteController extends Controller
     {
         return [
             'id' => $note->id,
+            'slug' => $note->slug,
             'user_id' => $note->user_id,
             'title' => $note->title,
             'excerpt' => $note->excerpt,
@@ -585,5 +594,18 @@ class NoteController extends Controller
         //       Or use: composer dev (which includes queue worker)
         //       Or set QUEUE_CONNECTION=sync in .env for synchronous processing
         ProcessNoteAiJob::dispatch($noteId);
+    }
+
+    private function recordNoteView(int $userId, int $noteId): void
+    {
+        NoteView::updateOrCreate(
+            [
+                'user_id' => $userId,
+                'note_id' => $noteId,
+            ],
+            [
+                'viewed_at' => now(),
+            ]
+        );
     }
 }

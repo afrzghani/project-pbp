@@ -45,14 +45,13 @@ export default function ProfileShow({ profileUser, stats, recentNotes, isOwnProf
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={profileUser.name} />
             <div className="flex h-full">
-                {/* Profile Sidebar - Static Column */}
                 <aside className="hidden w-80 border-r bg-sidebar lg:block">
                     <div className="h-16 border-b px-6 flex items-center justify-center">
                         <span className='font-semibold'>Profile Details</span>
                     </div>
                     <div className="flex flex-col items-center px-6 py-8 text-center">
                         <Avatar className="mb-4 h-24 w-24">
-                            <AvatarImage src={profileUser.profile_photo_url} alt={profileUser.name} />
+                            <AvatarImage src={profileUser.avatar_url || undefined} alt={profileUser.name} />
                             <AvatarFallback className="text-xl">{profileUser.acronym}</AvatarFallback>
                         </Avatar>
                         <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 mb-1">{profileUser.name}</h2>
@@ -62,7 +61,6 @@ export default function ProfileShow({ profileUser, stats, recentNotes, isOwnProf
 
                         {isOwnProfile && (
                             <Button asChild size="sm" variant="outline" className="mt-4 w-full">
-                                {/* @ts-ignore */}
                                 <Link href={editProfile()}>
                                     <Edit className="mr-2 h-4 w-4" />
                                     Edit Profile
@@ -78,7 +76,6 @@ export default function ProfileShow({ profileUser, stats, recentNotes, isOwnProf
                             <University className="mt-0.5 h-4 w-4 text-neutral-500" />
                             <div>
                                 <span className="block font-medium text-neutral-900 dark:text-neutral-100">University</span>
-                                {/* @ts-ignore */}
                                 <span className="text-neutral-500 dark:text-neutral-400">{profileUser.university?.name ?? 'Not set'}</span>
                             </div>
                         </div>
@@ -86,7 +83,6 @@ export default function ProfileShow({ profileUser, stats, recentNotes, isOwnProf
                             <GraduationCap className="mt-0.5 h-4 w-4 text-neutral-500" />
                             <div>
                                 <span className="block font-medium text-neutral-900 dark:text-neutral-100">Study Program</span>
-                                {/* @ts-ignore */}
                                 <span className="text-neutral-500 dark:text-neutral-400">{profileUser.program_study?.name ?? 'Not set'}</span>
                             </div>
                         </div>
@@ -95,7 +91,6 @@ export default function ProfileShow({ profileUser, stats, recentNotes, isOwnProf
                             <div>
                                 <span className="block font-medium text-neutral-900 dark:text-neutral-100">Joined</span>
                                 <span className="text-neutral-500 dark:text-neutral-400">
-                                    {/* Using created_at if available or just year */}
                                     Member since {new Date(profileUser.created_at || Date.now()).getFullYear()}
                                 </span>
                             </div>
@@ -104,7 +99,6 @@ export default function ProfileShow({ profileUser, stats, recentNotes, isOwnProf
 
                     <Separator />
 
-                    {/* Recent/Sidebar Activity */}
                     <div className="px-6 py-6">
                         <h4 className="mb-4 text-xs font-semibold uppercase tracking-wider text-neutral-500">
                             Recent Activity
@@ -113,7 +107,7 @@ export default function ProfileShow({ profileUser, stats, recentNotes, isOwnProf
                             {recentNotes.length > 0 ? (
                                 recentNotes.slice(0, 3).map(note => (
                                     /* @ts-ignore */
-                                    <Link key={note.id} href={showNote({ note: note.id })} className="block group">
+                                    <Link key={note.id} href={`/notes/${note.slug}`} className="block group">
                                         <div className="text-sm font-medium text-neutral-900 group-hover:text-blue-600 dark:text-neutral-100 dark:group-hover:text-blue-400 line-clamp-1">
                                             {note.title}
                                         </div>
@@ -149,7 +143,7 @@ export default function ProfileShow({ profileUser, stats, recentNotes, isOwnProf
                     {recentNotes.length > 0 ? (
                         <NoteGrid className='mt-0'>
                             {recentNotes.map((note) => (
-                                <FeedCard key={note.id} note={note} onShowComments={() => { }} />
+                                <FeedCard key={note.id} note={note} />
                             ))}
                         </NoteGrid>
                     ) : (

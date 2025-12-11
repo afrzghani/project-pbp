@@ -9,6 +9,7 @@ import { useState } from 'react';
 
 interface NoteItem {
     id: number;
+    slug: string;
     title: string;
     status: string;
     visibility: string;
@@ -75,10 +76,10 @@ export default function NotesIndex({ notes }: NotesPageProps) {
                             </div>
                         ) : (
                             notes.data.map((note) => (
-                                <Link
+                                <div
                                     key={note.id}
-                                    href={`/notes/${note.id}`}
-                                    className="group flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between hover:bg-muted/50 transition-colors"
+                                    onClick={() => router.visit(`/notes/${note.slug}`)}
+                                    className="group flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between hover:bg-muted/50 transition-colors cursor-pointer"
                                 >
                                     <div className="flex-1 min-w-0">
                                         <div className="flex flex-wrap items-center gap-2">
@@ -101,17 +102,15 @@ export default function NotesIndex({ notes }: NotesPageProps) {
                                     </div>
 
                                     <div className="flex gap-2 relative z-10" onClick={(e) => e.stopPropagation()}>
-                                        <Button 
-                                            asChild 
-                                            variant="secondary" 
+                                        <Button
+                                            variant="secondary"
                                             size="sm"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                router.visit(`/notes/${note.slug}/edit`);
+                                            }}
                                         >
-                                            <Link 
-                                                href={`/notes/${note.id}/edit`}
-                                                onClick={(e) => e.stopPropagation()}
-                                            >
-                                                Edit
-                                            </Link>
+                                            Edit
                                         </Button>
                                         <Button
                                             variant="destructive"
@@ -127,7 +126,7 @@ export default function NotesIndex({ notes }: NotesPageProps) {
                                             {deleting === note.id ? 'Menghapus...' : 'Hapus'}
                                         </Button>
                                     </div>
-                                </Link>
+                                </div>
                             ))
                         )}
                     </CardContent>
@@ -140,9 +139,8 @@ export default function NotesIndex({ notes }: NotesPageProps) {
                                 key={`${link.label}-${idx}`}
                                 preserveScroll
                                 href={link.url || '#'}
-                                className={`rounded-md border px-3 py-1 text-sm ${
-                                    link.active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
-                                } ${!link.url ? 'pointer-events-none opacity-50' : ''}`}
+                                className={`rounded-md border px-3 py-1 text-sm ${link.active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+                                    } ${!link.url ? 'pointer-events-none opacity-50' : ''}`}
                                 dangerouslySetInnerHTML={{ __html: link.label }}
                             />
                         ))}

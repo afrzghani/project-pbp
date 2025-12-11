@@ -87,4 +87,43 @@ class ProfileController extends Controller
 
         return redirect('/');
     }
+
+    /**
+     * Update the user's avatar.
+     */
+    public function updateAvatar(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'avatar' => ['required', 'image', 'max:2048'], // Max 2MB
+        ]);
+
+        $user = $request->user();
+
+        // Delete old avatar if exists
+        if ($user->avatar) {
+            \Illuminate\Support\Facades\Storage::disk(config('filesystems.default'))->delete($user->avatar);
+        }
+
+        // Store new avatar
+        $path = $request->file('avatar')->store('avatars/' . $user->id, config('filesystems.default'));
+
+        $user->update(['avatar' => $path]);
+
+        return back()->with('status', 'avatar-updated');
+    }
+
+    /**
+     * Delete the user's avatar.
+     */
+    public function destroyAvatar(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        if ($user->avatar) {
+            \Illuminate\Support\Facades\Storage::disk(config('filesystems.default'))->delete($user->avatar);
+            $user->update(['avatar' => null]);
+        }
+
+        return back()->with('status', 'avatar-deleted');
+    }
 }

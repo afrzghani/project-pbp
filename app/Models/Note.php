@@ -12,6 +12,14 @@ class Note extends Model
 {
     use HasFactory;
 
+    /**
+     * Get the route key for the model.
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
     protected $fillable = [
         'user_id',
         'forked_from_id',

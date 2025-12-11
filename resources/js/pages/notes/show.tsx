@@ -5,10 +5,12 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { type BreadcrumbItem } from '@/types';
-import { Edit, Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Shuffle, RefreshCcw, Flame, Layers, Calendar, Eye, EyeOff, RotateCw, ArrowLeft, Tag as TagIcon, Heart, MessageCircle, Bookmark, FileText, X } from 'lucide-react';
+import { Edit, Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Shuffle, RefreshCcw, Flame, Layers, Calendar, Eye, EyeOff, RotateCw, ArrowLeft, Tag as TagIcon, Heart, MessageCircle, Bookmark, FileText, X, Paperclip } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { CommentSection } from '@/components/comment-section';
 
 interface NoteTag {
     id: number;
@@ -25,6 +27,7 @@ interface Flashcard {
 
 interface NoteResource {
     id: number;
+    slug: string;
     user_id: number;
     title: string;
     excerpt?: string | null;
@@ -84,15 +87,30 @@ export default function NoteShow({ note, isOwner = false }: NoteShowProps) {
     const [bookmarksCount, setBookmarksCount] = useState(note.bookmarks_count ?? 0);
     const [bookmarking, setBookmarking] = useState(false);
     const [viewingPdfUrl, setViewingPdfUrl] = useState<string | null>(null);
+    const [commentsCount, setCommentsCount] = useState(note.comments_count ?? 0);
 
     const isPublic = note.visibility === 'public' && note.status === 'published';
     const canInteract = isPublic && !isOwner;
+
+    // Helper to get CSRF token
+    const getCsrfToken = () => {
+        const metaToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
+        if (metaToken) return metaToken;
+
+        const cookies = document.cookie.split(';');
+        for (const cookie of cookies) {
+            const [name, value] = cookie.trim().split('=');
+            if (name === 'XSRF-TOKEN') {
+                return decodeURIComponent(value);
+            }
+        }
+        return '';
+    };
 
     const flashcards = note.ai_flashcards ?? [];
     const displayFlashcards = shuffledFlashcards.length > 0 ? shuffledFlashcards : flashcards;
     const currentFlashcard = displayFlashcards[currentFlashcardIndex];
 
-    // Keyboard shortcuts for flashcard navigation
     useEffect(() => {
         if (!flashcardsOpen || displayFlashcards.length === 0) return;
 
@@ -134,7 +152,7 @@ export default function NoteShow({ note, isOwner = false }: NoteShowProps) {
         }
 
         setDeleting(true);
-        router.delete(`/notes/${note.id}`, {
+        router.delete(`/notes/${note.slug}`, {
             onFinish: () => setDeleting(false),
             onSuccess: () => router.visit('/notes'),
         });
@@ -183,7 +201,7 @@ export default function NoteShow({ note, isOwner = false }: NoteShowProps) {
         }
 
         setLiking(true);
-        const url = `/notes/${note.id}/like`;
+        const url = `/notes/${note.slug}/like`;
         const method = liked ? 'delete' : 'post';
 
         try {
@@ -192,7 +210,7 @@ export default function NoteShow({ note, isOwner = false }: NoteShowProps) {
                 method: method,
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    'X-XSRF-TOKEN': getCsrfToken(),
                     'X-Requested-With': 'XMLHttpRequest',
                 },
                 credentials: 'same-origin',
@@ -222,7 +240,7 @@ export default function NoteShow({ note, isOwner = false }: NoteShowProps) {
         }
 
         setBookmarking(true);
-        const url = `/notes/${note.id}/bookmark`;
+        const url = `/notes/${note.slug}/bookmark`;
         const method = bookmarked ? 'delete' : 'post';
 
         try {
@@ -230,7 +248,7 @@ export default function NoteShow({ note, isOwner = false }: NoteShowProps) {
                 method: method,
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    'X-XSRF-TOKEN': getCsrfToken(),
                     'X-Requested-With': 'XMLHttpRequest',
                 },
                 credentials: 'same-origin',
@@ -338,7 +356,7 @@ export default function NoteShow({ note, isOwner = false }: NoteShowProps) {
                     </div>
                 </div>
 
-                {/* Content */}
+                {/* Content with Tabs */}
                 <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 p-6">
                     {/* Metadata */}
                     <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
@@ -369,377 +387,402 @@ export default function NoteShow({ note, isOwner = false }: NoteShowProps) {
                         )}
                     </div>
 
-                    {/* AI Summary */}
-                    {note.ai_summary && (
-                        <Card className="border-green-200 bg-gradient-to-br from-green-50 to-emerald-50/50 dark:border-green-800 dark:from-green-950/20 dark:to-emerald-950/10">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-lg">
-                                    <div className="rounded-full bg-green-100 p-1.5 dark:bg-green-900/30">
-                                        <Flame className="h-4 w-4 text-green-600 dark:text-green-400" />
-                                    </div>
-                                    Ringkasan AI
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-sm leading-relaxed text-foreground">{note.ai_summary}</p>
-                            </CardContent>
-                        </Card>
-                    )}
+                    {/* Tabs */}
+                    <Tabs defaultValue="content" className="w-full">
+                        <TabsList className="grid w-full grid-cols-3">
+                            <TabsTrigger value="content" className="gap-2">
+                                <FileText className="h-4 w-4" />
+                                Catatan
+                            </TabsTrigger>
+                            <TabsTrigger value="attachments" className="gap-2">
+                                <Paperclip className="h-4 w-4" />
+                                Lampiran ({(note.attachments?.length ?? 0) + (note.file_url && !note.attachments?.length ? 1 : 0)})
+                            </TabsTrigger>
+                            <TabsTrigger value="comments" className="gap-2">
+                                <MessageCircle className="h-4 w-4" />
+                                Komentar ({commentsCount})
+                            </TabsTrigger>
+                        </TabsList>
 
-                    {/* Content */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Konten Catatan</CardTitle>
-                            {note.excerpt && (
-                                <CardDescription className="text-base italic">{note.excerpt}</CardDescription>
-                            )}
-                        </CardHeader>
-                        <CardContent>
-                            {note.content_html || note.content_text ? (
-                                <div
-                                    className="tiptap-content prose prose-lg max-w-none dark:prose-invert overflow-auto"
-                                    // allow tables and wide content to scroll horizontally
-                                    dangerouslySetInnerHTML={{ __html: note.content_html || `<p>${note.content_text}</p>` || '' }}
-                                />
-                            ) : (
-                                <p className="text-muted-foreground italic">Belum ada konten.</p>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    {/* Flashcards Section */}
-                    {flashcards.length > 0 && (
-                        <Card className="overflow-hidden">
-                            <Collapsible open={flashcardsOpen} onOpenChange={setFlashcardsOpen}>
-                                <CollapsibleTrigger asChild>
-                                    <CardHeader className="cursor-pointer transition-colors hover:bg-muted/50">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="rounded-full bg-blue-100 p-2 dark:bg-blue-900/30">
-                                                    <Layers className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                                                </div>
-                                                <div>
-                                                    <CardTitle className="text-lg">
-                                                        Flashcard
-                                                    </CardTitle>
-                                                    <CardDescription>
-                                                        {flashcards.length} kartu tersedia • Klik untuk {flashcardsOpen ? 'menutup' : 'membuka'}
-                                                    </CardDescription>
-                                                </div>
+                        {/* Tab: Catatan */}
+                        <TabsContent value="content" className="space-y-6 mt-6">
+                            {/* AI Summary */}
+                            {note.ai_summary && (
+                                <Card className="border-green-200 bg-gradient-to-br from-green-50 to-emerald-50/50 dark:border-green-800 dark:from-green-950/20 dark:to-emerald-950/10">
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2 text-lg">
+                                            <div className="rounded-full bg-green-100 p-1.5 dark:bg-green-900/30">
+                                                <Flame className="h-4 w-4 text-green-600 dark:text-green-400" />
                                             </div>
-                                            {flashcardsOpen ? (
-                                                <ChevronUp className="h-5 w-5 text-muted-foreground" />
-                                            ) : (
-                                                <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                                            )}
-                                        </div>
+                                            Ringkasan AI
+                                        </CardTitle>
                                     </CardHeader>
-                                </CollapsibleTrigger>
-                                <CollapsibleContent>
-                                    <CardContent className="space-y-4 p-6">
-                                        {/* Progress Indicator */}
-                                        <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                            <span>Kartu {currentFlashcardIndex + 1} dari {displayFlashcards.length}</span>
-                                            <div className="flex gap-1">
-                                                {displayFlashcards.map((_, idx) => (
-                                                    <div
-                                                        key={idx}
-                                                        className={cn(
-                                                            'h-1.5 w-1.5 rounded-full transition-colors',
-                                                            idx === currentFlashcardIndex
-                                                                ? 'bg-primary'
-                                                                : 'bg-muted'
-                                                        )}
-                                                    />
-                                                ))}
-                                            </div>
-                                        </div>
+                                    <CardContent>
+                                        <p className="text-sm leading-relaxed text-foreground">{note.ai_summary}</p>
+                                    </CardContent>
+                                </Card>
+                            )}
 
-                                        {/* Flashcard Viewer */}
-                                        <div className="relative">
-                                            <Card
-                                                className={cn(
-                                                    'group min-h-[360px] cursor-pointer overflow-hidden border-2 transition-all duration-300 hover:shadow-lg',
-                                                    isFlipped
-                                                        ? 'border-primary bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg'
-                                                        : 'border-primary/20 bg-card hover:border-primary/40'
-                                                )}
-                                                onClick={handleFlip}
-                                            >
-                                                <CardHeader className="flex flex-row items-center justify-between border-b">
-                                                    <CardTitle className="text-base">
-                                                        {isFlipped ? 'Jawaban' : 'Pertanyaan'}
-                                                    </CardTitle>
-                                                    <Badge
-                                                        variant={isFlipped ? 'secondary' : 'outline'}
-                                                        className="text-xs"
+                            {/* Content */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Konten Catatan</CardTitle>
+                                    {note.excerpt && (
+                                        <CardDescription className="text-base italic">{note.excerpt}</CardDescription>
+                                    )}
+                                </CardHeader>
+                                <CardContent>
+                                    {note.content_html || note.content_text ? (
+                                        <div
+                                            className="tiptap-content prose prose-lg max-w-none dark:prose-invert overflow-auto"
+                                            dangerouslySetInnerHTML={{ __html: note.content_html || `<p>${note.content_text}</p>` || '' }}
+                                        />
+                                    ) : (
+                                        <p className="text-muted-foreground italic">Belum ada konten.</p>
+                                    )}
+                                </CardContent>
+                            </Card>
+
+                            {/* Flashcards Section */}
+                            {flashcards.length > 0 && (
+                                <Card className="overflow-hidden">
+                                    <Collapsible open={flashcardsOpen} onOpenChange={setFlashcardsOpen}>
+                                        <CollapsibleTrigger asChild>
+                                            <CardHeader className="cursor-pointer transition-colors hover:bg-muted/50">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="rounded-full bg-blue-100 p-2 dark:bg-blue-900/30">
+                                                            <Layers className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                                        </div>
+                                                        <div>
+                                                            <CardTitle className="text-lg">
+                                                                Flashcard
+                                                            </CardTitle>
+                                                            <CardDescription>
+                                                                {flashcards.length} kartu tersedia • Klik untuk {flashcardsOpen ? 'menutup' : 'membuka'}
+                                                            </CardDescription>
+                                                        </div>
+                                                    </div>
+                                                    {flashcardsOpen ? (
+                                                        <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                                                    ) : (
+                                                        <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                                                    )}
+                                                </div>
+                                            </CardHeader>
+                                        </CollapsibleTrigger>
+                                        <CollapsibleContent>
+                                            <CardContent className="space-y-4 p-6">
+                                                {/* Progress Indicator */}
+                                                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                                                    <span>Kartu {currentFlashcardIndex + 1} dari {displayFlashcards.length}</span>
+                                                    <div className="flex gap-1">
+                                                        {displayFlashcards.map((_, idx) => (
+                                                            <div
+                                                                key={idx}
+                                                                className={cn(
+                                                                    'h-1.5 w-1.5 rounded-full transition-colors',
+                                                                    idx === currentFlashcardIndex
+                                                                        ? 'bg-primary'
+                                                                        : 'bg-muted'
+                                                                )}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Flashcard Viewer */}
+                                                <div className="relative">
+                                                    <Card
+                                                        className={cn(
+                                                            'group min-h-[360px] cursor-pointer overflow-hidden border-2 transition-all duration-300 hover:shadow-lg',
+                                                            isFlipped
+                                                                ? 'border-primary bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg'
+                                                                : 'border-primary/20 bg-card hover:border-primary/40'
+                                                        )}
+                                                        onClick={handleFlip}
+                                                    >
+                                                        <CardHeader className="flex flex-row items-center justify-between border-b">
+                                                            <CardTitle className="text-base">
+                                                                {isFlipped ? 'Jawaban' : 'Pertanyaan'}
+                                                            </CardTitle>
+                                                            <Badge
+                                                                variant={isFlipped ? 'secondary' : 'outline'}
+                                                                className="text-xs"
+                                                            >
+                                                                {isFlipped ? (
+                                                                    <Eye className="mr-1 h-3 w-3" />
+                                                                ) : (
+                                                                    <EyeOff className="mr-1 h-3 w-3" />
+                                                                )}
+                                                                Klik untuk flip
+                                                            </Badge>
+                                                        </CardHeader>
+                                                        <CardContent className="flex min-h-[280px] items-center justify-center p-8">
+                                                            {currentFlashcard ? (
+                                                                <p className="text-center text-xl font-medium leading-relaxed">
+                                                                    {isFlipped ? currentFlashcard.answer : currentFlashcard.question}
+                                                                </p>
+                                                            ) : (
+                                                                <p className="text-muted-foreground">Tidak ada flashcard</p>
+                                                            )}
+                                                        </CardContent>
+                                                    </Card>
+                                                </div>
+
+                                                <p className="text-center text-xs text-muted-foreground">
+                                                    Gunakan panah kiri/kanan untuk navigasi, Space/Enter untuk flip
+                                                </p>
+
+                                                <div className="flex flex-wrap items-center justify-center gap-2">
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={handlePrev}
+                                                        disabled={currentFlashcardIndex === 0}
+                                                        size="sm"
+                                                        className="gap-2"
+                                                    >
+                                                        <ChevronLeft className="h-4 w-4" />
+                                                        Sebelumnya
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={handleFlip}
+                                                        size="sm"
+                                                        className="gap-2"
                                                     >
                                                         {isFlipped ? (
-                                                            <Eye className="mr-1 h-3 w-3" />
+                                                            <>
+                                                                <EyeOff className="h-4 w-4" />
+                                                                Lihat Pertanyaan
+                                                            </>
                                                         ) : (
-                                                            <EyeOff className="mr-1 h-3 w-3" />
+                                                            <>
+                                                                <Eye className="h-4 w-4" />
+                                                                Lihat Jawaban
+                                                            </>
                                                         )}
-                                                        Klik untuk flip
-                                                    </Badge>
-                                                </CardHeader>
-                                                <CardContent className="flex min-h-[280px] items-center justify-center p-8">
-                                                    {currentFlashcard ? (
-                                                        <p className="text-center text-xl font-medium leading-relaxed">
-                                                            {isFlipped ? currentFlashcard.answer : currentFlashcard.question}
-                                                        </p>
-                                                    ) : (
-                                                        <p className="text-muted-foreground">Tidak ada flashcard</p>
-                                                    )}
-                                                </CardContent>
-                                            </Card>
-                                        </div>
-
-                                        <p className="text-center text-xs text-muted-foreground">
-                                            Gunakan panah kiri/kanan untuk navigasi, Space/Enter untuk flip
-                                        </p>
-
-                                        <div className="flex flex-wrap items-center justify-center gap-2">
-                                            <Button
-                                                variant="outline"
-                                                onClick={handlePrev}
-                                                disabled={currentFlashcardIndex === 0}
-                                                size="sm"
-                                                className="gap-2"
-                                            >
-                                                <ChevronLeft className="h-4 w-4" />
-                                                Sebelumnya
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                onClick={handleFlip}
-                                                size="sm"
-                                                className="gap-2"
-                                            >
-                                                {isFlipped ? (
-                                                    <>
-                                                        <EyeOff className="h-4 w-4" />
-                                                        Lihat Pertanyaan
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Eye className="h-4 w-4" />
-                                                        Lihat Jawaban
-                                                    </>
-                                                )}
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                onClick={handleNext}
-                                                disabled={currentFlashcardIndex === displayFlashcards.length - 1}
-                                                size="sm"
-                                                className="gap-2"
-                                            >
-                                                Berikutnya
-                                                <ChevronRight className="h-4 w-4" />
-                                            </Button>
-                                            <Separator orientation="vertical" className="h-6" />
-                                            <Button
-                                                variant="secondary"
-                                                onClick={handleShuffle}
-                                                size="sm"
-                                                className="gap-2"
-                                            >
-                                                <Shuffle className="h-4 w-4" />
-                                                Acak
-                                            </Button>
-                                            {shuffledFlashcards.length > 0 && (
-                                                <Button
-                                                    variant="ghost"
-                                                    onClick={handleReset}
-                                                    size="sm"
-                                                    className="gap-2"
-                                                >
-                                                    <RefreshCcw className="h-4 w-4" />
-                                                    Reset
-                                                </Button>
-                                            )}
-                                        </div>
-                                    </CardContent>
-                                </CollapsibleContent>
-                            </Collapsible>
-                        </Card>
-                    )}
-
-
-                    {note.file_url && !note.attachments?.length && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <FileText className="h-5 w-5" />
-                                    Lampiran
-                                </CardTitle>
-                                <CardDescription>
-                                    {note.file_original_name}
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex flex-col gap-3">
-                                    <div className="flex items-center gap-3">
-                                        <Badge variant="secondary">
-                                            {note.file_original_name?.toLowerCase().endsWith('.pdf') ? 'PDF' : 'File'}
-                                        </Badge>
-                                        <span className="text-sm text-muted-foreground">
-                                            {note.file_original_name}
-                                        </span>
-                                    </div>
-
-                                    <div className="flex gap-2">
-                                        {note.file_original_name?.toLowerCase().endsWith('.pdf') && (
-                                            <Button
-                                                onClick={() => setViewingPdfUrl(note.file_url || null)}
-                                                className="gap-2"
-                                            >
-                                                <Eye className="h-4 w-4" />
-                                                Lihat PDF
-                                            </Button>
-                                        )}
-                                        <Button
-                                            variant="outline"
-                                            asChild
-                                        >
-                                            <a href={note.file_url} download target="_blank" rel="noopener noreferrer" className="gap-2">
-                                                Download
-                                            </a>
-                                        </Button>
-                                    </div>
-
-                                    {/* PDF Preview iframe */}
-                                    {note.file_original_name?.toLowerCase().endsWith('.pdf') && viewingPdfUrl === note.file_url && (
-                                        <div className="mt-4 border rounded-lg overflow-hidden bg-muted/20">
-                                            <div className="flex items-center justify-between p-3 border-b bg-muted/50">
-                                                <span className="text-sm font-medium">Preview PDF</span>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => setViewingPdfUrl(null)}
-                                                >
-                                                    <X className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                            <iframe
-                                                src={note.file_url}
-                                                className="w-full border-0"
-                                                style={{ height: '600px' }}
-                                                title={note.file_original_name || 'PDF Viewer'}
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {note.attachments && note.attachments.length > 0 && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <FileText className="h-5 w-5" />
-                                    Lampiran ({note.attachments.length})
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-4">
-                                    {note.attachments.map((attachment) => (
-                                        <div key={attachment.id} className="rounded-lg border p-3">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <div className="flex items-center gap-2">
-                                                    <Badge variant="secondary" className="uppercase">
-                                                        {attachment.file_type || 'FILE'}
-                                                    </Badge>
-                                                    <span className="text-sm font-medium truncate max-w-[200px] sm:max-w-xs">
-                                                        {attachment.file_name}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-1">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        asChild
-                                                    >
-                                                        <a href={attachment.url} download target="_blank" rel="noopener noreferrer">
-                                                            <ArrowLeft className="h-4 w-4 rotate-[-90deg]" />
-                                                        </a>
                                                     </Button>
-                                                    {isOwner && (
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={handleNext}
+                                                        disabled={currentFlashcardIndex === displayFlashcards.length - 1}
+                                                        size="sm"
+                                                        className="gap-2"
+                                                    >
+                                                        Berikutnya
+                                                        <ChevronRight className="h-4 w-4" />
+                                                    </Button>
+                                                    <Separator orientation="vertical" className="h-6" />
+                                                    <Button
+                                                        variant="secondary"
+                                                        onClick={handleShuffle}
+                                                        size="sm"
+                                                        className="gap-2"
+                                                    >
+                                                        <Shuffle className="h-4 w-4" />
+                                                        Acak
+                                                    </Button>
+                                                    {shuffledFlashcards.length > 0 && (
                                                         <Button
                                                             variant="ghost"
+                                                            onClick={handleReset}
                                                             size="sm"
-                                                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                                            onClick={() => {
-                                                                if (confirm('Hapus lampiran ini?')) {
-                                                                    router.delete(`/attachments/${attachment.id}`, {
-                                                                        preserveScroll: true,
-                                                                    });
-                                                                }
-                                                            }}
+                                                            className="gap-2"
                                                         >
-                                                            <Trash2 className="h-4 w-4" />
+                                                            <RefreshCcw className="h-4 w-4" />
+                                                            Reset
                                                         </Button>
                                                     )}
                                                 </div>
-                                            </div>
+                                            </CardContent>
+                                        </CollapsibleContent>
+                                    </Collapsible>
+                                </Card>
+                            )}
+                        </TabsContent>
 
-                                            {/* PDF Preview Button & Inline Viewer */}
-                                            {attachment.mime_type === 'application/pdf' && (
-                                                <div className="mt-2">
-                                                    {viewingPdfUrl !== attachment.url ? (
+                        {/* Tab: Lampiran */}
+                        <TabsContent value="attachments" className="mt-6">
+                            {note.attachments && note.attachments.length > 0 ? (
+                                <div className="space-y-4">
+                                    {note.attachments.map((attachment) => (
+                                        <Card key={attachment.id}>
+                                            <CardContent className="p-4">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <Badge variant="secondary" className="uppercase">
+                                                            {attachment.file_type || 'FILE'}
+                                                        </Badge>
+                                                        <span className="text-sm font-medium truncate max-w-[200px] sm:max-w-xs">
+                                                            {attachment.file_name}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
                                                         <Button
                                                             variant="outline"
                                                             size="sm"
-                                                            onClick={() => setViewingPdfUrl(attachment.url)}
-                                                            className="w-full gap-2"
+                                                            asChild
                                                         >
-                                                            <Eye className="h-4 w-4" />
-                                                            Preview PDF
+                                                            <a href={attachment.url} download target="_blank" rel="noopener noreferrer">
+                                                                Download
+                                                            </a>
                                                         </Button>
-                                                    ) : (
-                                                        <div className="mt-2 border rounded-lg overflow-hidden bg-muted/20">
-                                                            <div className="flex items-center justify-between p-2 border-b bg-muted/50">
-                                                                <span className="text-xs font-medium">Preview</span>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    className="h-6 w-6 p-0"
-                                                                    onClick={() => setViewingPdfUrl(null)}
-                                                                >
-                                                                    <X className="h-3 w-3" />
-                                                                </Button>
-                                                            </div>
-                                                            <iframe
-                                                                src={attachment.url}
-                                                                className="w-full border-0"
-                                                                style={{ height: '400px' }}
-                                                                title={attachment.file_name}
-                                                            />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-
-                                            {/* Image Preview */}
-                                            {attachment.mime_type?.startsWith('image/') && (
-                                                <div className="mt-2">
-                                                    <div className="rounded-lg overflow-hidden border bg-muted/20">
-                                                        <img
-                                                            src={attachment.url}
-                                                            alt={attachment.file_name}
-                                                            className="w-full h-auto max-h-[400px] object-contain"
-                                                            loading="lazy"
-                                                        />
+                                                        {isOwner && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                                onClick={() => {
+                                                                    if (confirm('Hapus lampiran ini?')) {
+                                                                        router.delete(`/attachments/${attachment.id}`, {
+                                                                            preserveScroll: true,
+                                                                        });
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        )}
                                                     </div>
                                                 </div>
-                                            )}
-                                        </div>
+
+                                                {/* PDF Preview */}
+                                                {attachment.mime_type === 'application/pdf' && (
+                                                    <div className="mt-2">
+                                                        {viewingPdfUrl !== attachment.url ? (
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => setViewingPdfUrl(attachment.url)}
+                                                                className="w-full gap-2"
+                                                            >
+                                                                <Eye className="h-4 w-4" />
+                                                                Preview PDF
+                                                            </Button>
+                                                        ) : (
+                                                            <div className="mt-2 border rounded-lg overflow-hidden bg-muted/20">
+                                                                <div className="flex items-center justify-between p-2 border-b bg-muted/50">
+                                                                    <span className="text-xs font-medium">Preview</span>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        className="h-6 w-6 p-0"
+                                                                        onClick={() => setViewingPdfUrl(null)}
+                                                                    >
+                                                                        <X className="h-3 w-3" />
+                                                                    </Button>
+                                                                </div>
+                                                                <iframe
+                                                                    src={attachment.url}
+                                                                    className="w-full border-0"
+                                                                    style={{ height: '400px' }}
+                                                                    title={attachment.file_name}
+                                                                />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                {/* Image Preview */}
+                                                {attachment.mime_type?.startsWith('image/') && (
+                                                    <div className="mt-2">
+                                                        <div className="rounded-lg overflow-hidden border bg-muted/20">
+                                                            <img
+                                                                src={attachment.url}
+                                                                alt={attachment.file_name}
+                                                                className="w-full h-auto max-h-[400px] object-contain"
+                                                                loading="lazy"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </CardContent>
+                                        </Card>
                                     ))}
                                 </div>
-                            </CardContent>
-                        </Card>
-                    )}   
+                            ) : note.file_url ? (
+                                <Card>
+                                    <CardContent className="p-4">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <Badge variant="secondary">
+                                                {note.file_original_name?.toLowerCase().endsWith('.pdf') ? 'PDF' : 'File'}
+                                            </Badge>
+                                            <span className="text-sm text-muted-foreground">
+                                                {note.file_original_name}
+                                            </span>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            {note.file_original_name?.toLowerCase().endsWith('.pdf') && (
+                                                <Button
+                                                    onClick={() => setViewingPdfUrl(note.file_url || null)}
+                                                    className="gap-2"
+                                                >
+                                                    <Eye className="h-4 w-4" />
+                                                    Lihat PDF
+                                                </Button>
+                                            )}
+                                            <Button variant="outline" asChild>
+                                                <a href={note.file_url} download target="_blank" rel="noopener noreferrer">
+                                                    Download
+                                                </a>
+                                            </Button>
+                                        </div>
+                                        {note.file_original_name?.toLowerCase().endsWith('.pdf') && viewingPdfUrl === note.file_url && (
+                                            <div className="mt-4 border rounded-lg overflow-hidden bg-muted/20">
+                                                <div className="flex items-center justify-between p-3 border-b bg-muted/50">
+                                                    <span className="text-sm font-medium">Preview PDF</span>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => setViewingPdfUrl(null)}
+                                                    >
+                                                        <X className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                                <iframe
+                                                    src={note.file_url}
+                                                    className="w-full border-0"
+                                                    style={{ height: '600px' }}
+                                                    title={note.file_original_name || 'PDF Viewer'}
+                                                />
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            ) : (
+                                <Card>
+                                    <CardContent className="p-8 text-center text-muted-foreground">
+                                        <Paperclip className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                                        <p>Tidak ada lampiran</p>
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </TabsContent>
+
+                        {/* Tab: Komentar */}
+                        <TabsContent value="comments" className="mt-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <MessageCircle className="h-5 w-5" />
+                                        Komentar
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <CommentSection
+                                        noteSlug={note.slug}
+                                        noteId={note.id}
+                                        currentUserId={auth?.user?.id}
+                                        noteOwnerId={note.user_id}
+                                        canComment={isPublic || isOwner}
+                                        onCountChange={setCommentsCount}
+                                    />
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                    </Tabs>
+
                     <div className="flex items-center justify-between pt-4">
                         <Button variant="outline" asChild>
                             <Link href={isOwner ? "/notes" : "/dashboard"}>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Note;
 use App\Models\NoteComment;
+use App\Models\Notification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -47,6 +48,14 @@ class NoteCommentController extends Controller
             'status' => 'published',
         ]);
 
+        // Buat notifikasi untuk pemilik catatan
+        Notification::createForComment(
+            $note->user_id,
+            $request->user()->id,
+            $note->id,
+            $comment->id
+        );
+
         return response()->json([
             'data' => $this->transformComment($comment->load('user:id,name')),
         ], 201);
@@ -64,7 +73,15 @@ class NoteCommentController extends Controller
 
     protected function ensureInteractable(Request $request, Note $note): void
     {
-        abort_if(! $note->isInteractableBy($request->user()), 403, 'Catatan tidak tersedia.');
+        $user = $request->user();
+        
+        // Owner can always interact with their own notes
+        if ($note->user_id === $user->id) {
+            return;
+        }
+        
+        // For non-owners, check if note is public and published
+        abort_if(! $note->isInteractableBy($user), 403, 'Catatan tidak tersedia.');
         abort_if(! $note->isPublic(), 403, 'Catatan belum dipublikasikan.');
     }
 

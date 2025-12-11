@@ -7,9 +7,10 @@ import {
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { UserInfo } from '@/components/user-info';
 import { UserMenuContent } from '@/components/user-menu-content';
+import { NotificationDropdown } from '@/components/notification-dropdown';
 import { type BreadcrumbItem as BreadcrumbItemType, type SharedData } from '@/types';
 import { usePage } from '@inertiajs/react';
-import { ChevronsUpDown, Search } from 'lucide-react';
+import { ChevronsUpDown, Search, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { router } from '@inertiajs/react';
 import { dashboard } from '@/routes';
@@ -70,7 +71,17 @@ export function AppSidebarHeader({
                     </Button>
                 </form>
             </div>
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex items-center gap-4">
+                {/* Action buttons group */}
+                <div className="flex items-center gap-1">
+                    <Button variant="default" size="sm" className="gap-2" onClick={() => router.visit('/notes/create')}>
+                        <Plus className="size-4" />
+                        <span className="hidden sm:inline">Tambah Catatan</span>
+                    </Button>
+                    <NotificationDropdown />
+                </div>
+
+                {/* Profile dropdown */}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <button className="flex items-center gap-2 outline-none">

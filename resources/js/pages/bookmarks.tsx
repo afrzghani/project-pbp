@@ -18,10 +18,10 @@ export default function Bookmarks({ notes }: { notes: { data: FeedNote[]; links:
             <div className="flex h-full flex-col p-6">
                 <div className="mb-6">
                     <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-                        Bookmarked Notes
+                        Catatan disimpan
                     </h1>
                     <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                        Notes you have saved for later.
+                        Catatan yang kamu simpan
                     </p>
                 </div>
 
@@ -29,17 +29,17 @@ export default function Bookmarks({ notes }: { notes: { data: FeedNote[]; links:
                 {notes.data.length > 0 ? (
                     <NoteGrid className='mt-0'>
                         {notes.data.map((note) => (
-                            <FeedCard key={note.id} note={note} onShowComments={() => { }} />
+                            <FeedCard key={note.id} note={note} />
                         ))}
                     </NoteGrid>
                 ) : (
                     <div className="flex flex-1 flex-col items-center justify-center rounded-xl border border-dashed border-neutral-200 bg-neutral-50 py-16 dark:border-neutral-800 dark:bg-neutral-900/50">
                         <div className="text-center">
                             <h3 className="mt-2 text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                                No bookmarks yet
+                                Belum ada catatan yang disimpan
                             </h3>
                             <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                                Start exploring and bookmark notes you find interesting.
+                                Mulai mengeksplorasi dan simpan catatan yang menarik.
                             </p>
                         </div>
                     </div>

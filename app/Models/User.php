@@ -32,6 +32,7 @@ class User extends Authenticatable
         'profile_completed',
         'profile_completed_at',
         'profile_meta',
+        'avatar',
     ];
 
     /**
@@ -119,6 +120,18 @@ class User extends Authenticatable
     public function bookmarks(): HasMany
     {
         return $this->hasMany(NoteBookmark::class);
+    }
+
+    /**
+     * Get the avatar URL.
+     */
+    public function getAvatarUrlAttribute(): ?string
+    {
+        if (!$this->avatar) {
+            return null;
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk(config('filesystems.default'))->url($this->avatar);
     }
 }
 

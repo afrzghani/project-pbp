@@ -1,6 +1,5 @@
 import { FeedTabs } from '@/components/feed/feed-tabs';
 import FeedCard from '@/components/feed/feed-card';
-import CommentsSheet from '@/components/comments/comments-sheet';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type FeedNote, type FeedPagination } from '@/types';
 import { Head, Link } from '@inertiajs/react';
@@ -20,7 +19,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function Explore({ feed }: ExploreProps) {
     const [activeTab, setActiveTab] = useState('for-you');
-    const [commentsNote, setCommentsNote] = useState<FeedNote | null>(null);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -44,7 +42,6 @@ export default function Explore({ feed }: ExploreProps) {
                                 <FeedCard
                                     key={note.id}
                                     note={note}
-                                    onShowComments={() => setCommentsNote(note)}
                                 />
                             ))}
                             <div className="flex flex-wrap items-center justify-end gap-2 pt-4">
@@ -81,7 +78,6 @@ export default function Explore({ feed }: ExploreProps) {
                     )}
                 </div>
             </div>
-            <CommentsSheet note={commentsNote} onOpenChange={setCommentsNote} />
         </AppLayout>
     );
 }

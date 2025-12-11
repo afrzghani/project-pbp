@@ -8,6 +8,7 @@ use App\Http\Controllers\NoteController;
 use App\Http\Controllers\NoteCommentController;
 use App\Http\Controllers\NoteBookmarkController;
 use App\Http\Controllers\NoteLikeController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfilePageController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -28,6 +29,12 @@ Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
     Route::get('leaderboard', [LeaderboardController::class, 'index'])->name('leaderboard.index');
     Route::get('u/me', [ProfilePageController::class, 'me'])->name('profile.me');
     Route::get('u/{user}', [ProfilePageController::class, 'show'])->name('profile.show');
+
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('api/notifications', [NotificationController::class, 'getNotifications'])->name('notifications.get');
+    Route::post('notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    Route::delete('notifications/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
 
     Route::post('notes/{note}/like', [NoteLikeController::class, 'store'])->name('notes.like');
     Route::delete('notes/{note}/like', [NoteLikeController::class, 'destroy'])->name('notes.like.destroy');

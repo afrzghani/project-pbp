@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Note;
 use App\Models\NoteBookmark;
+use App\Models\Notification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -19,6 +20,15 @@ class NoteBookmarkController extends Controller
             'user_id' => $user->id,
             'note_id' => $note->id,
         ]);
+
+        // Buat notifikasi jika bookmark baru (bukan duplicate)
+        if ($bookmark->wasRecentlyCreated) {
+            Notification::createForBookmark(
+                $note->user_id,
+                $user->id,
+                $note->id
+            );
+        }
 
         return response()->json([
             'bookmarked' => true,

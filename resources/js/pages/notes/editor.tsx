@@ -91,12 +91,14 @@ export default function NoteEditor({ note, availableTags }: NoteEditorProps) {
 
     useEffect(() => {
         form.setData('tags', selectedTags);
-    }, [selectedTags, form]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedTags]);
 
     useEffect(() => {
         form.setData('content_html', contentHtml);
         form.setData('content_text', contentText);
-    }, [contentHtml, contentText, form]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [contentHtml, contentText]);
 
 
 

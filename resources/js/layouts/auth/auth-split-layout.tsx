@@ -20,16 +20,20 @@ export default function AuthSplitLayout({
         <div className="relative grid h-dvh flex-col items-center justify-center px-8 sm:px-0 lg:max-w-none lg:grid-cols-2 lg:px-0">
             <div className="relative hidden h-full flex-col p-10 text-white lg:flex">
 
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-400 rounded-3xl m-4 overflow-hidden">
-                    <div className="absolute top-10 left-10 p-3 bg-white/10 rounded-2xl backdrop-blur-sm animate-pulse">
-                        <Brain className="w-8 h-8 text-white/80" />
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-blue-400 rounded-3xl m-4 overflow-hidden">
+                    <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.05)_1px,transparent_1px)] bg-[size:60px_60px]" />
+
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
+
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-6 bg-white/10 rounded-3xl backdrop-blur-xl border border-white/20 shadow-2xl">
+                        <img src="/images/logo.png" alt="Logo" className="w-32 h-32 object-contain drop-shadow-2xl" />
                     </div>
-                    <div className="absolute bottom-20 right-10 p-3 bg-white/10 rounded-2xl backdrop-blur-sm animate-bounce delay-700">
-                        <Cloud className="w-8 h-8 text-white/80" />
-                    </div>
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-4 bg-white/10 rounded-full backdrop-blur-md">
-                        <NotebookTabs className="w-12 h-12 text-white" />
-                    </div>
+
+                    <div className="absolute top-10 right-10 w-20 h-20 border border-white/20 rounded-2xl" />
+                    <div className="absolute bottom-10 left-10 w-16 h-16 border border-white/20 rounded-full" />
+                    <div className="absolute top-1/4 left-10 w-2 h-2 bg-white/40 rounded-full" />
+                    <div className="absolute bottom-1/4 right-20 w-3 h-3 bg-white/30 rounded-full" />
+                    <div className="absolute top-1/3 right-1/4 w-1.5 h-1.5 bg-white/50 rounded-full" />
                 </div>
                 <Link
                     href={home()}
@@ -42,7 +46,7 @@ export default function AuthSplitLayout({
                         <blockquote className="space-y-2">
                             <p className="text-lg">
                                 &ldquo;{quote.message}&rdquo;
-                                
+
                             </p>
                             <footer className="text-sm text-neutral-300">
                                 {quote.author}
@@ -56,8 +60,9 @@ export default function AuthSplitLayout({
                 <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
                     <Link
                         href={home()}
-                        className="relative z-20 flex items-center justify-center lg:hidden text-2xl font-black tracking-tight"
+                        className="relative z-20 flex items-center justify-center gap-2 lg:hidden text-2xl font-black tracking-tight"
                     >
+                        <img src="/images/logo.png" alt="Logo" className="h-8 w-8 object-contain" />
                         NoteStation.
                     </Link>
                     <div className="flex flex-col items-start gap-2 text-left sm:items-center sm:text-center">

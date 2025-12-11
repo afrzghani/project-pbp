@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef } from 'react';
 
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import { send } from '@/routes/verification';
@@ -26,7 +26,8 @@ import { Badge } from '@/components/ui/badge';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { edit } from '@/routes/profile';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Camera, Trash2 } from 'lucide-react';
+import { ImageCropper } from '@/components/image-cropper';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -64,6 +65,51 @@ export default function Profile({
     const [selectedProgramStudyId, setSelectedProgramStudyId] = useState<string>(
         auth.user.program_study_id ? String(auth.user.program_study_id) : ''
     );
+    const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+    const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+    const [showCropper, setShowCropper] = useState(false);
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setSelectedImage(reader.result as string);
+            setShowCropper(true);
+        };
+        reader.readAsDataURL(file);
+
+        e.target.value = '';
+    };
+
+    const handleCropComplete = (croppedBlob: Blob) => {
+        const previewUrl = URL.createObjectURL(croppedBlob);
+        setAvatarPreview(previewUrl);
+
+        setIsUploadingAvatar(true);
+        const formData = new FormData();
+        formData.append('avatar', croppedBlob, 'avatar.jpg');
+
+        router.post('/settings/profile/avatar', formData, {
+            forceFormData: true,
+            preserveScroll: true,
+            onFinish: () => {
+                setIsUploadingAvatar(false);
+                setAvatarPreview(null);
+                setSelectedImage(null);
+            },
+        });
+    };
+
+    const handleDeleteAvatar = () => {
+        router.delete('/settings/profile/avatar', {
+            preserveScroll: true,
+        });
+    };
+
 
 
     const universitiesById = useMemo(() => {
@@ -158,6 +204,63 @@ export default function Profile({
                         title="Profile information"
                         description="Update nama, email kampus, dan detail akademik Anda."
                     />
+
+                    <div className="flex items-center gap-6">
+                        <div className="relative">
+                            <div className="h-24 w-24 overflow-hidden rounded-full bg-muted">
+                                {avatarPreview || auth.user.avatar_url ? (
+                                    <img
+                                        src={avatarPreview || auth.user.avatar_url || ''}
+                                        alt="Avatar"
+                                        className="h-full w-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="flex h-full w-full items-center justify-center bg-primary/10 text-2xl font-semibold text-primary">
+                                        {auth.user.name.charAt(0).toUpperCase()}
+                                    </div>
+                                )}
+                            </div>
+                            {isUploadingAvatar && (
+                                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50">
+                                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleFileSelect}
+                            />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={isUploadingAvatar}
+                            >
+                                <Camera className="mr-2 h-4 w-4" />
+                                {auth.user.avatar_url ? 'Ganti foto' : 'Upload foto'}
+                            </Button>
+                            {auth.user.avatar_url && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleDeleteAvatar}
+                                    className="text-destructive hover:text-destructive"
+                                >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Hapus foto
+                                </Button>
+                            )}
+                            <p className="text-xs text-muted-foreground">
+                                Foto JPG atau PNG
+                            </p>
+                        </div>
+                    </div>
 
                     <Form
                         {...ProfileController.update.form()}
@@ -440,6 +543,18 @@ export default function Profile({
 
                 <DeleteUser />
             </SettingsLayout>
+            
+            {selectedImage && (
+                <ImageCropper
+                    imageSrc={selectedImage}
+                    open={showCropper}
+                    onClose={() => {
+                        setShowCropper(false);
+                        setSelectedImage(null);
+                    }}
+                    onCropComplete={handleCropComplete}
+                />
+            )}
         </AppLayout>
     );
 }

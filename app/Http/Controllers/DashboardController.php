@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
 use App\Models\Note;
+use App\Models\NoteView;
 use App\Models\ProgramStudy;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -26,11 +27,20 @@ class DashboardController extends Controller
 
         $leaderboard = $this->getProgramStudyLeaderboard($user);
 
-        // Recent Notes (Proxy: Recently updated by user)
-        $recentNotes = Note::where('user_id', $user->id)
-            ->orderByDesc('updated_at')
+        // Recently Viewed Notes (from note_views table)
+        $viewedNoteIds = NoteView::where('user_id', $user->id)
+            ->orderByDesc('viewed_at')
             ->limit(3)
+            ->pluck('note_id');
+
+        $recentNotes = Note::whereIn('id', $viewedNoteIds)
+            ->with(['user', 'tags'])
+            ->withCount(['likes', 'comments', 'bookmarks'])
             ->get()
+            ->sortBy(function ($note) use ($viewedNoteIds) {
+                return array_search($note->id, $viewedNoteIds->toArray());
+            })
+            ->values()
             ->map(fn ($note) => $this->transformNote($note));
 
         // Bookmarked Notes
@@ -38,6 +48,7 @@ class DashboardController extends Controller
             $query->where('user_id', $user->id);
         })
             ->with(['user', 'tags']) // Eager load relationships
+            ->withCount(['likes', 'comments', 'bookmarks'])
             ->orderByDesc('created_at') // Or bookmark timestamp if available via pivot
             ->limit(3)
             ->get()
@@ -180,6 +191,7 @@ class DashboardController extends Controller
         return $query->paginate(10)->withQueryString()->through(function (Note $note) {
             return [
                 'id' => $note->id,
+                'slug' => $note->slug,
                 'title' => $note->title,
                 'excerpt' => $note->excerpt ?: Str::limit($note->content_text ?? '', 140),
                 'ai_summary' => $note->ai_summary,
@@ -209,6 +221,7 @@ class DashboardController extends Controller
     {
         return [
             'id' => $note->id,
+            'slug' => $note->slug,
             'title' => $note->title,
             'excerpt' => $note->excerpt ?: Str::limit($note->content_text ?? '', 140),
             'ai_summary' => $note->ai_summary,

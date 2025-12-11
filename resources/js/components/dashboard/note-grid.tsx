@@ -2,7 +2,6 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Link } from '@inertiajs/react';
 import { Calendar, Clock, Heart, MessageCircle, Bookmark, FileText } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 interface NoteGridProps {
     title: string;
@@ -36,7 +35,7 @@ export function NoteGrid({ title, notes, actionLink, emptyMessage = "Belum ada c
             ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {notes.map((note) => (
-                        <Link key={note.id} href={`/notes/${note.id}`} className="block h-full">
+                        <Link key={note.id} href={`/notes/${note.slug}`} className="block h-full">
                             <Card className="group relative flex h-full flex-col justify-between overflow-hidden border-border/50 bg-card transition-all hover:border-primary/50 hover:shadow-md">
                                 <div className="p-5">
                                     <div className="mb-4 flex items-start justify-between">
@@ -70,26 +69,21 @@ export function NoteGrid({ title, notes, actionLink, emptyMessage = "Belum ada c
                                     </div>
                                 </div>
 
-                                <div className="mt-auto border-t border-border/50 bg-muted/20 p-3">
-                                    <div className="flex items-center justify-between gap-2">
-                                        <div className="flex items-center gap-1">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-500">
-                                                <Heart className="size-4" />
-                                                <span className="sr-only">Like</span>
-                                            </Button>
-                                            <span className="text-xs text-muted-foreground">{note.likes_count}</span>
-
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-blue-500 ml-2">
-                                                <MessageCircle className="size-4" />
-                                                <span className="sr-only">Comment</span>
-                                            </Button>
-                                            <span className="text-xs text-muted-foreground">{note.comments_count}</span>
-                                        </div>
-
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
-                                            <Bookmark className="size-4" />
-                                            <span className="sr-only">Bookmark</span>
-                                        </Button>
+                                {/* Stats footer - display only */}
+                                <div className="mt-auto border-t border-border/50 bg-muted/20 px-5 py-3">
+                                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                        <span className="flex items-center gap-1">
+                                            <Heart className="size-3.5" />
+                                            {note.likes_count ?? 0}
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                            <MessageCircle className="size-3.5" />
+                                            {note.comments_count ?? 0}
+                                        </span>
+                                        <span className="flex items-center gap-1 ml-auto">
+                                            <Bookmark className="size-3.5" />
+                                            {note.bookmarks_count ?? 0}
+                                        </span>
                                     </div>
                                 </div>
                             </Card>
@@ -100,3 +94,4 @@ export function NoteGrid({ title, notes, actionLink, emptyMessage = "Belum ada c
         </section>
     );
 }
+
