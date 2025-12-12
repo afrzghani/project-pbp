@@ -123,6 +123,16 @@ class User extends Authenticatable
     }
 
     /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany<Badge>
+     */
+    public function badges(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Badge::class, 'user_badges')
+            ->withPivot('awarded_at')
+            ->orderByPivot('awarded_at', 'desc');
+    }
+
+    /**
      * Get the avatar URL.
      */
     public function getAvatarUrlAttribute(): ?string

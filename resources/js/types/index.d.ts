@@ -75,6 +75,7 @@ export interface NoteAttachment {
 
 export interface NoteResource {
     id: number;
+    slug: string;
     title: string;
     excerpt?: string | null;
     content_html?: string | null;
@@ -159,3 +160,23 @@ export interface CommentPayload {
     user: { id: number; name: string };
     created_at: string;
 }
+
+export interface Badge {
+    id: number;
+    slug: string;
+    name: string;
+    description: string;
+    icon: string;
+    category: string;
+    tier: 1 | 2 | 3 | 4 | 5;
+    requirement_type: string;
+    requirement_value: number;
+    earned?: boolean;
+    awarded_at?: string;
+}
+
+export interface BadgeStats {
+    earned: number;
+    total: number;
+}
+

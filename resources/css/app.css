@@ -144,7 +144,48 @@
 
 /* Tiptap Styles */
 .ProseMirror {
-    @apply outline-none min-h-[100px];
+    outline: none;
+    min-height: 100px;
+}
+
+/* Text formatting marks - using raw CSS */
+.ProseMirror strong,
+.ProseMirror b {
+    font-weight: 700 !important;
+}
+
+.ProseMirror em,
+.ProseMirror i {
+    font-style: italic !important;
+}
+
+.ProseMirror u {
+    text-decoration: underline !important;
+}
+
+.ProseMirror s,
+.ProseMirror strike {
+    text-decoration: line-through !important;
+}
+
+.ProseMirror mark {
+    background-color: #fef08a !important;
+    padding: 0 2px;
+    border-radius: 2px;
+}
+
+.dark .ProseMirror mark {
+    background-color: rgba(234, 179, 8, 0.4) !important;
+}
+
+.ProseMirror a {
+    color: var(--primary);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.ProseMirror a:hover {
+    text-decoration: none;
 }
 
 .ProseMirror p.is-editor-empty:first-child::before {
@@ -170,9 +211,39 @@
     content: "";
 }
 
-
 .ProseMirror img {
-    @apply max-w-full h-auto rounded-md my-4 border;
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.375rem;
+    margin: 1rem 0;
+    border: 1px solid hsl(var(--border));
+    cursor: pointer;
+    transition: box-shadow 0.2s ease;
+}
+
+.ProseMirror img:hover {
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.3);
+}
+
+.ProseMirror img.ProseMirror-selectednode {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
+}
+
+.ProseMirror img[data-size="small"] {
+    max-width: 200px;
+}
+
+.ProseMirror img[data-size="medium"] {
+    max-width: 400px;
+}
+
+.ProseMirror img[data-size="large"] {
+    max-width: 600px;
+}
+
+.ProseMirror img[data-size="full"] {
+    max-width: 100%;
 }
 
 .ProseMirror blockquote {
@@ -204,8 +275,6 @@
     @apply list-decimal;
 }
 
-.ProseMirror li {}
-
 .ProseMirror h1 {
     @apply text-3xl font-bold mt-6 mb-4;
 }
@@ -227,12 +296,6 @@
     @apply before:content-none after:content-none;
 }
 
-.prose pre {}
-
-.prose ul,
-.prose ol {}
-
-/* Tiptap content in show view - match editor styling exactly */
 .tiptap-content h1 {
     @apply text-3xl font-bold mt-6 mb-4 text-foreground;
 }
@@ -257,7 +320,7 @@
     @apply list-decimal pl-6;
 }
 
-.tiptap-content li {}
+
 
 .tiptap-content table {
     @apply border-collapse table-fixed w-full overflow-hidden rounded-md border;
@@ -301,12 +364,15 @@
     0% {
         transform: translate(0px, 0px) scale(1);
     }
+
     33% {
         transform: translate(30px, -50px) scale(1.1);
     }
+
     66% {
         transform: translate(-20px, 20px) scale(0.9);
     }
+
     100% {
         transform: translate(0px, 0px) scale(1);
     }

@@ -2,11 +2,12 @@ import FeedCard from '@/components/feed/feed-card';
 import { show as showNote } from '@/routes/notes';
 import { edit as editProfile } from '@/routes/profile';
 import { NoteGrid } from '@/components/note-grid';
+import { BadgeGrid } from '@/components/badges';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem, type FeedNote, type User } from '@/types';
+import { type BreadcrumbItem, type FeedNote, type User, type Badge, type BadgeStats } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import { Calendar, Edit, FileText, GraduationCap, University } from 'lucide-react';
 
@@ -27,9 +28,11 @@ interface ProfileShowProps {
     stats: ProfileStats;
     recentNotes: FeedNote[];
     isOwnProfile: boolean;
+    badges: Badge[];
+    badgeStats: BadgeStats;
 }
 
-export default function ProfileShow({ profileUser, stats, recentNotes, isOwnProfile }: ProfileShowProps) {
+export default function ProfileShow({ profileUser, stats, recentNotes, isOwnProfile, badges, badgeStats }: ProfileShowProps) {
     const breadcrumbs: BreadcrumbItem[] = [
         {
             title: 'Profile',
@@ -120,6 +123,15 @@ export default function ProfileShow({ profileUser, stats, recentNotes, isOwnProf
                                 <p className="text-sm text-neutral-500 italic">No recent activity.</p>
                             )}
                         </div>
+                    </div>
+
+                    <Separator />
+
+                    <div className="px-6 py-6">
+                        <h4 className="mb-4 text-xs font-semibold uppercase tracking-wider text-neutral-500">
+                            Badges
+                        </h4>
+                        <BadgeGrid badges={badges} stats={badgeStats} maxDisplay={6} />
                     </div>
                 </aside>
 

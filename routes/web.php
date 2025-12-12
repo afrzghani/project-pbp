@@ -46,6 +46,11 @@ Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
     Route::post('upload/image', [ImageUploadController::class, 'upload'])->name('upload.image');
     Route::delete('attachments/{attachment}', [\App\Http\Controllers\NoteAttachmentController::class, 'destroy'])->name('attachments.destroy');
     Route::resource('notes', NoteController::class);
+
+    // Badge routes
+    Route::get('badges', [\App\Http\Controllers\BadgeController::class, 'index'])->name('badges.index');
+    Route::get('api/users/{user}/badges', [\App\Http\Controllers\BadgeController::class, 'userBadges'])->name('users.badges');
+    Route::post('api/badges/check', [\App\Http\Controllers\BadgeController::class, 'check'])->name('badges.check');
 });
 
 require __DIR__.'/settings.php';

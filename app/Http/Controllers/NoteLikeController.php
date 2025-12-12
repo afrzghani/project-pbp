@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Note;
 use App\Models\Notification;
+use App\Services\BadgeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -24,6 +25,9 @@ class NoteLikeController extends Controller
                 $request->user()->id,
                 $note->id
             );
+
+            $badgeService = app(BadgeService::class);
+            $badgeService->checkAndAward($note->user, 'like_received');
         }
 
         return response()->json([

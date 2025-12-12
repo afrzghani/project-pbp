@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class ImageUploadController extends Controller
@@ -11,13 +12,15 @@ class ImageUploadController extends Controller
     public function upload(Request $request): JsonResponse
     {
         $request->validate([
-            'image' => 'required|image|max:2048', // Max 2MB
+            'image' => 'required|image|max:5120',
         ]);
 
         if ($request->hasFile('image')) {
             $file = $request->file('image');
-            $path = $file->store('uploads/images', config('filesystems.default'));
-            $url = Storage::disk(config('filesystems.default'))->url($path);
+            $userId = Auth::id() ?? 'guest';
+            $disk = config('filesystems.default');
+            $path = $file->store("uploads/images/{$userId}", $disk);
+            $url = Storage::disk($disk)->url($path);
 
             return response()->json([
                 'success' => true,
@@ -25,6 +28,6 @@ class ImageUploadController extends Controller
             ]);
         }
 
-        return response()->json(['error' => 'No image uploaded'], 400);
+        return response()->json(['success' => false, 'error' => 'Tidak ada gambar'], 400);
     }
 }

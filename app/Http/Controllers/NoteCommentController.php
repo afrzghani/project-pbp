@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Note;
 use App\Models\NoteComment;
 use App\Models\Notification;
+use App\Services\BadgeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -56,6 +57,13 @@ class NoteCommentController extends Controller
             $comment->id
         );
 
+        $badgeService = app(BadgeService::class);
+        $badgeService->checkAndAward($request->user(), 'comment_written');
+
+        if ($note->user_id !== $request->user()->id) {
+            $badgeService->checkAndAward($note->user, 'comment_received');
+        }
+
         return response()->json([
             'data' => $this->transformComment($comment->load('user:id,name')),
         ], 201);
@@ -75,12 +83,10 @@ class NoteCommentController extends Controller
     {
         $user = $request->user();
         
-        // Owner can always interact with their own notes
         if ($note->user_id === $user->id) {
             return;
         }
         
-        // For non-owners, check if note is public and published
         abort_if(! $note->isInteractableBy($user), 403, 'Catatan tidak tersedia.');
         abort_if(! $note->isPublic(), 403, 'Catatan belum dipublikasikan.');
     }

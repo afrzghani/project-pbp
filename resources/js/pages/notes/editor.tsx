@@ -1,12 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Head, Link, useForm, router } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import InputError from '@/components/input-error';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -15,24 +14,45 @@ import LinkExtension from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import Highlight from '@tiptap/extension-highlight';
 import TextAlign from '@tiptap/extension-text-align';
-import ImageExtension from '@tiptap/extension-image';
+import ImageResize from 'tiptap-extension-resize-image';
 import { Table } from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
-import { Flame, FileText, Loader2, Save, X, Plus, Tag as TagIcon, Trash2 } from 'lucide-react';
+import {
+    Flame,
+    Loader2,
+    Save,
+    X,
+    Tag as TagIcon,
+    ChevronLeft,
+    Check,
+    Clock,
+    Settings,
+    FileText,
+    Upload
+} from 'lucide-react';
 import { type SharedData, type NoteResource, type NoteTag, type NoteAttachment } from '@/types';
 import { usePage } from '@inertiajs/react';
 import { SlashCommand, slashCommandSuggestion } from '@/components/editor/slash-command';
 import EditorToolbar from '@/components/editor/editor-toolbar';
 import AttachmentsPanel from '@/components/editor/attachments-panel';
 import TagsPanel from '@/components/editor/tags-panel';
-
+import { cn } from '@/lib/utils';
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+} from '@/components/ui/sheet';
 
 interface NoteEditorProps {
     note: NoteResource | null;
     availableTags: NoteTag[];
 }
+
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 export default function NoteEditor({ note, availableTags }: NoteEditorProps) {
     const { integrations } = usePage<SharedData>().props;
@@ -43,8 +63,12 @@ export default function NoteEditor({ note, availableTags }: NoteEditorProps) {
     );
     const [newTag, setNewTag] = useState('');
     const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
-
-
+    const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+    const [isFullscreen] = useState(false);
+    const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+    const [lastSaved, setLastSaved] = useState<Date | null>(null);
+    const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const hasUnsavedChanges = useRef(false);
 
     const form = useForm({
         title: note?.title ?? '',
@@ -55,9 +79,8 @@ export default function NoteEditor({ note, availableTags }: NoteEditorProps) {
         visibility: note?.visibility ?? 'private',
         tags: selectedTags,
         file: null as File | null,
-        files: [] as File[], // Add support for multiple files
+        files: [] as File[],
         source_type: note?.source_type ?? 'manual',
-
         process_ai: false,
     });
 
@@ -69,10 +92,8 @@ export default function NoteEditor({ note, availableTags }: NoteEditorProps) {
             LinkExtension.configure({ openOnClick: false }),
             Placeholder.configure({ placeholder: 'Mulai menulis catatan Anda… (Ketik "/" untuk perintah)' }),
             TextAlign.configure({ types: ['heading', 'paragraph'] }),
-            ImageExtension.configure({
-                HTMLAttributes: {
-                    class: 'rounded-lg max-w-full h-auto',
-                },
+            ImageResize.configure({
+                allowBase64: true,
             }),
             Table.configure({ resizable: true }),
             TableRow,
@@ -83,38 +104,85 @@ export default function NoteEditor({ note, availableTags }: NoteEditorProps) {
             }),
         ],
         content: note?.content_html ?? '',
+        editable: true,
+        immediatelyRender: false,
         onUpdate: ({ editor }) => {
             setContentHtml(editor.getHTML());
             setContentText(editor.getText());
+            hasUnsavedChanges.current = true;
         },
     });
 
+
+    const autoSave = useCallback(() => {
+        if (!hasUnsavedChanges.current || !form.data.title.trim()) return;
+        if (!note) return;
+
+        setSaveStatus('saving');
+
+        const submitData = {
+            ...form.data,
+            content_html: contentHtml,
+            content_text: contentText,
+            tags: selectedTags,
+        };
+
+        router.put(`/notes/${note.slug}`, submitData, {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                setSaveStatus('saved');
+                setLastSaved(new Date());
+                hasUnsavedChanges.current = false;
+                setTimeout(() => setSaveStatus('idle'), 2000);
+            },
+            onError: () => {
+                setSaveStatus('error');
+                setTimeout(() => setSaveStatus('idle'), 3000);
+            },
+        });
+    }, [note, form.data, contentHtml, contentText, selectedTags]);
+
+    useEffect(() => {
+        if (!note) return;
+
+        if (autoSaveTimerRef.current) {
+            clearInterval(autoSaveTimerRef.current);
+        }
+
+        autoSaveTimerRef.current = setInterval(() => {
+            if (hasUnsavedChanges.current) {
+                autoSave();
+            }
+        }, 30000);
+
+        return () => {
+            if (autoSaveTimerRef.current) {
+                clearInterval(autoSaveTimerRef.current);
+            }
+        };
+    }, [note, autoSave]);
+
     useEffect(() => {
         form.setData('tags', selectedTags);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedTags]);
 
     useEffect(() => {
         form.setData('content_html', contentHtml);
         form.setData('content_text', contentText);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [contentHtml, contentText]);
 
-
-
     useEffect(() => {
-        if (note && editor) {
+        if (note && editor && !editor.isDestroyed) {
             const htmlContent = note.content_html ?? (note.content_text ? `<p>${note.content_text}</p>` : '');
-            const textContent = note.content_text ?? editor.getText();
-
-            // Only update if content actually changed
-            if (htmlContent && htmlContent !== contentHtml) {
+            // Only set content if editor is empty or on initial load
+            if (editor.isEmpty || editor.getHTML() === '<p></p>') {
                 editor.commands.setContent(htmlContent);
                 setContentHtml(htmlContent);
-                setContentText(textContent);
+                setContentText(note.content_text ?? '');
             }
         }
-    }, [note?.id, note?.content_html, note?.content_text, editor, contentHtml]);
+    }, [note?.id, editor]);
 
     const isEditing = Boolean(note);
 
@@ -133,7 +201,24 @@ export default function NoteEditor({ note, availableTags }: NoteEditorProps) {
             visibility: currentVisibility,
         };
 
-        const url = isEditing ? `/notes/${note?.id}` : '/notes';
+        const url = isEditing ? `/notes/${note?.slug}` : '/notes';
+
+        setSaveStatus('saving');
+
+        const handleSuccess = () => {
+            setSaveStatus('saved');
+            hasUnsavedChanges.current = false;
+            setTimeout(() => {
+                router.visit('/notes', {
+                    preserveState: false,
+                });
+            }, 800);
+        };
+
+        const handleError = () => {
+            setSaveStatus('error');
+            setTimeout(() => setSaveStatus('idle'), 3000);
+        };
 
         if (isEditing) {
             const hasFiles = (form.data.files && form.data.files.length > 0) || form.data.file !== null;
@@ -144,17 +229,23 @@ export default function NoteEditor({ note, availableTags }: NoteEditorProps) {
                     ...submitData,
                 }, {
                     preserveScroll: true,
+                    onSuccess: handleSuccess,
+                    onError: handleError,
                 });
             } else {
                 form.transform(() => submitData);
                 form.put(url, {
                     preserveScroll: true,
+                    onSuccess: handleSuccess,
+                    onError: handleError,
                 });
             }
         } else {
             form.transform(() => submitData);
             form.post(url, {
                 preserveScroll: true,
+                onSuccess: handleSuccess,
+                onError: handleError,
             });
         }
     };
@@ -165,6 +256,7 @@ export default function NoteEditor({ note, availableTags }: NoteEditorProps) {
                 ? prev.filter((tag) => tag !== tagName)
                 : [...prev, tagName]
         );
+        hasUnsavedChanges.current = true;
     };
 
     const handleAddCustomTag = () => {
@@ -172,6 +264,7 @@ export default function NoteEditor({ note, availableTags }: NoteEditorProps) {
         if (!tag) return;
         if (!selectedTags.includes(tag)) {
             setSelectedTags((prev) => [...prev, tag]);
+            hasUnsavedChanges.current = true;
         }
         setNewTag('');
     };
@@ -179,9 +272,8 @@ export default function NoteEditor({ note, availableTags }: NoteEditorProps) {
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
         if (files && files.length > 0) {
-            // Convert FileList to array
             const fileArray = Array.from(files);
-            form.setData('files', fileArray); // Use 'files' key for multiple
+            form.setData('files', fileArray);
             form.setData('source_type', 'upload');
 
             if (files.length === 1) {
@@ -189,256 +281,357 @@ export default function NoteEditor({ note, availableTags }: NoteEditorProps) {
             } else {
                 setUploadedFileName(`${files.length} file dipilih`);
             }
+            hasUnsavedChanges.current = true;
         } else {
             form.setData('files', []);
             setUploadedFileName(null);
         }
     };
 
-
-
     const wordCount = contentText.trim().length ? contentText.trim().split(/\s+/).length : 0;
+    const charCount = contentText.length;
+
+    const getSaveStatusDisplay = () => {
+        switch (saveStatus) {
+            case 'saving':
+                return (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span className="text-sm">Menyimpan...</span>
+                    </div>
+                );
+            case 'saved':
+                return (
+                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                        <Check className="h-4 w-4" />
+                        <span className="text-sm">Tersimpan!</span>
+                    </div>
+                );
+            case 'error':
+                return (
+                    <div className="flex items-center gap-2 text-destructive">
+                        <X className="h-4 w-4" />
+                        <span className="text-sm">Gagal menyimpan</span>
+                    </div>
+                );
+            default:
+                if (lastSaved) {
+                    return (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                            <Clock className="h-4 w-4" />
+                            <span className="text-sm">
+                                Terakhir disimpan: {lastSaved.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                        </div>
+                    );
+                }
+                return null;
+        }
+    };
+
+    const SettingsContent = () => (
+        <div className="space-y-5">
+            <div className="rounded-xl border bg-background p-4 space-y-4">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pengaturan Publikasi</h4>
+
+                <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                        <Label className="text-xs">Status</Label>
+                        <select
+                            className="w-full rounded-lg border bg-muted/50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                            value={form.data.status}
+                            onChange={(e) => {
+                                form.setData('status', e.target.value);
+                                hasUnsavedChanges.current = true;
+                            }}
+                        >
+                            <option value="draft">Draf</option>
+                            <option value="published">Publikasi</option>
+                            <option value="archived">Arsip</option>
+                        </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <Label className="text-xs">Visibilitas</Label>
+                        <select
+                            className="w-full rounded-lg border bg-muted/50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                            value={form.data.visibility}
+                            onChange={(e) => {
+                                form.setData('visibility', e.target.value);
+                                hasUnsavedChanges.current = true;
+                            }}
+                        >
+                            <option value="private">Privat</option>
+                            <option value="public">Publik</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            {/* Attachments */}
+            <div className="rounded-xl border bg-background p-4 space-y-3">
+                <Label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <Upload className="h-3.5 w-3.5" />
+                    Lampiran
+                </Label>
+                <AttachmentsPanel
+                    note={note}
+                    uploadedFileName={uploadedFileName}
+                    onFileChange={handleFileChange}
+                    form={form}
+                    pendingFiles={pendingFiles}
+                    setPendingFiles={setPendingFiles}
+                />
+            </div>
+
+            {/* AI Processing */}
+            <div className="rounded-xl border border-blue-200 dark:border-blue-800 bg-gradient-to-r from-blue-50 to-sky-50 dark:from-blue-950/30 dark:to-sky-950/30 p-4">
+                <div className="flex items-start gap-3">
+                    <Checkbox
+                        id="process_ai"
+                        checked={form.data.process_ai}
+                        onCheckedChange={(value) => form.setData('process_ai', Boolean(value))}
+                        className="mt-0.5 border-blue-400 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+                    />
+                    <Label htmlFor="process_ai" className="flex-1 cursor-pointer space-y-1">
+                        <div className="flex items-center gap-2">
+                            <Flame className="h-4 w-4 text-blue-500" />
+                            <span className="font-medium text-sm">Generate Flashcard</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Generate ringkasan & flashcard otomatis</p>
+                    </Label>
+                </div>
+            </div>
+
+            {note?.ai_status && (
+                <div className="rounded-xl border bg-background p-4">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Status AI</span>
+                        <Badge
+                            variant={
+                                note.ai_status === 'completed'
+                                    ? 'default'
+                                    : note.ai_status === 'processing' || note.ai_status === 'queued'
+                                        ? 'secondary'
+                                        : note.ai_status === 'failed'
+                                            ? 'destructive'
+                                            : 'outline'
+                            }
+                        >
+                            {note.ai_status === 'completed' && 'Selesai'}
+                            {note.ai_status === 'processing' && 'Memproses...'}
+                            {note.ai_status === 'queued' && 'Antrian'}
+                            {note.ai_status === 'failed' && 'Gagal'}
+                        </Badge>
+                    </div>
+                    {note.ai_completed_at && (
+                        <p className="text-xs text-muted-foreground">
+                            Selesai: {new Date(note.ai_completed_at).toLocaleString('id-ID')}
+                        </p>
+                    )}
+                </div>
+            )}
+
+            {/* Tags */}
+            <div className="rounded-xl border bg-background p-4 space-y-3">
+                <Label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <TagIcon className="h-3.5 w-3.5" />
+                    Tags
+                </Label>
+                <TagsPanel
+                    selectedTags={selectedTags}
+                    toggleTag={toggleTag}
+                    newTag={newTag}
+                    setNewTag={setNewTag}
+                    handleAddCustomTag={handleAddCustomTag}
+                    availableTags={availableTags}
+                />
+            </div>
+        </div>
+    );
 
     return (
-        <AppLayout breadcrumbs={[{ title: 'Catatan', href: '/notes' }, { title: isEditing ? 'Edit Catatan' : 'Catatan Baru', href: '#' }]}>
-            <Head title={isEditing ? `Edit: ${note?.title}` : 'Catatan Baru'} />
+        <>
+            <Head title={isEditing ? `Edit: ${note?.title || 'Catatan'}` : 'Catatan Baru'} />
 
-            <div className="flex flex-1 flex-col">
-                {/* Sticky Header */}
-                <div className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75">
-                    <div className="flex items-center justify-between gap-4 p-4">
-                        <div className="flex-1">
-                            <h1 className="text-xl font-semibold">
-                                {form.data.title || (isEditing ? 'Edit Catatan' : 'Catatan Baru')}
-                            </h1>
-                            <p className="text-sm text-muted-foreground">
-                                {isEditing ? 'Edit catatan Anda' : 'Buat catatan baru'}
-                            </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="uppercase">
-                                {form.data.status}
-                            </Badge>
-                            <Badge variant="secondary" className="capitalize">
-                                {form.data.visibility}
-                            </Badge>
-                            <Button type="button" variant="outline" size="sm" asChild>
+            <div className={cn(
+                "flex flex-col bg-background transition-all duration-300",
+                isFullscreen ? "fixed inset-0 z-50" : "min-h-screen"
+            )}>
+                <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75">
+                    <div className="flex items-center justify-between gap-4 px-4 h-14">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                asChild
+                                className="shrink-0"
+                            >
                                 <Link href="/notes">
-                                    <X className="h-4 w-4 mr-2" />
-                                    Batal
+                                    <ChevronLeft className="h-5 w-5" />
                                 </Link>
                             </Button>
-                            <Button type="submit" form="note-form" disabled={form.processing} size="sm">
-                                {form.processing ? (
+
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                                <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
+                                <Input
+                                    value={form.data.title}
+                                    onChange={(e) => {
+                                        form.setData('title', e.target.value);
+                                        hasUnsavedChanges.current = true;
+                                    }}
+                                    placeholder="Judul catatan..."
+                                    className="text-lg font-semibold border-0 bg-transparent px-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/50"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                            <div className="hidden sm:block">
+                                {saveStatus === 'idle' && lastSaved && (
+                                    <div className="flex items-center gap-2 text-muted-foreground">
+                                        <Clock className="h-4 w-4" />
+                                        <span className="text-sm">
+                                            Terakhir disimpan: {lastSaved.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <Button
+                                type="submit"
+                                form="note-form"
+                                disabled={form.processing || saveStatus === 'saving'}
+                                className="gap-2"
+                            >
+                                {saveStatus === 'saving' ? (
                                     <>
-                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                        Menyimpan...
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        <span className="hidden sm:inline">Menyimpan...</span>
+                                    </>
+                                ) : saveStatus === 'saved' ? (
+                                    <>
+                                        <Check className="h-4 w-4" />
+                                        <span className="hidden sm:inline">Tersimpan!</span>
                                     </>
                                 ) : (
                                     <>
-                                        <Save className="h-4 w-4 mr-2" />
-                                        Simpan
+                                        <Save className="h-4 w-4" />
+                                        <span className="hidden sm:inline">Simpan</span>
                                     </>
                                 )}
                             </Button>
                         </div>
                     </div>
-                </div>
+                </header>
 
-                <form id="note-form" onSubmit={handleSubmit} className="flex flex-1 flex-col gap-6 p-6">
-                    <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 lg:flex-row">
-                        {/* Main Content */}
-                        <div className="flex-1 space-y-6">
-                            <div className="space-y-2">
-                                <Label htmlFor="title" className="text-base font-medium">
-                                    Judul Catatan
-                                </Label>
-                                <Input
-                                    id="title"
-                                    value={form.data.title}
-                                    onChange={(e) => form.setData('title', e.target.value)}
-                                    placeholder="Contoh: Ringkasan Kuliah AI"
-                                    className="text-lg"
-                                />
-                                <InputError message={form.errors.title} />
-                            </div>
+                <form id="note-form" onSubmit={handleSubmit} className="flex-1 flex overflow-hidden">
+                    <div className="flex flex-1 gap-0">
+                        <div className="flex-1 flex flex-col overflow-y-auto">
+                            <div className="flex-1 max-w-4xl w-full mx-auto px-6 py-6">
+                                {form.errors.title && (
+                                    <div className="mb-4">
+                                        <InputError message={form.errors.title} />
+                                    </div>
+                                )}
 
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <Label className="text-base font-medium">Konten</Label>
-                                    <span className="text-xs text-muted-foreground">
-                                        {wordCount} kata
-                                    </span>
-                                </div>
-                                <div className="rounded-lg border bg-card shadow-sm">
-                                    <EditorToolbar editor={editor} />
-                                    <div className="min-h-[400px]">
-                                        <EditorContent
-                                            editor={editor}
-                                            className="ProseMirror p-4 focus-within:outline-none"
-                                        />
+                                <div className="rounded-2xl border border-border/50 bg-card shadow-lg shadow-black/5 dark:shadow-black/20 overflow-hidden ring-1 ring-black/5 dark:ring-white/5">
+                                    {editor ? (
+                                        <>
+                                            <EditorToolbar editor={editor} />
+
+                                            <div className={cn(
+                                                "transition-all duration-300 bg-background",
+                                                isFullscreen ? "min-h-[calc(100vh-180px)]" : "min-h-[500px]"
+                                            )}>
+                                                <EditorContent
+                                                    editor={editor}
+                                                    className="px-8 py-6 [&_.ProseMirror]:min-h-[450px] [&_.ProseMirror]:outline-none [&_.ProseMirror]:focus:outline-none [&_.ProseMirror]:text-foreground [&_.ProseMirror]:leading-relaxed [&_.ProseMirror]:text-base"
+                                                />
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="flex items-center justify-center min-h-[500px] bg-muted/20">
+                                            <div className="flex flex-col items-center gap-3">
+                                                <Loader2 className="h-8 w-8 animate-spin text-primary/60" />
+                                                <span className="text-sm text-muted-foreground">Memuat editor...</span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="flex items-center justify-between border-t border-border/50 px-6 py-3 bg-muted/20 text-sm">
+                                        <div className="flex items-center gap-6 text-muted-foreground">
+                                            <span className="flex items-center gap-1.5">
+                                                <span className="font-medium text-foreground">{wordCount}</span> kata
+                                            </span>
+                                            <span className="flex items-center gap-1.5">
+                                                <span className="font-medium text-foreground">{charCount}</span> karakter
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-3 text-muted-foreground">
+                                            {selectedTags.length > 0 && (
+                                                <span className="flex items-center gap-1.5">
+                                                    <TagIcon className="h-3.5 w-3.5" />
+                                                    <span className="font-medium text-foreground">{selectedTags.length}</span> tag
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                                <InputError message={form.errors.content_html} />
-                                <p className="text-xs text-muted-foreground">
-                                    Gunakan toolbar untuk format teks. Klik area editor untuk mulai menulis.
-                                </p>
+                                {note?.ai_summary && (
+                                    <Card className="mt-6 border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/20">
+                                        <CardHeader className="pb-2">
+                                            <CardTitle className="flex items-center gap-2 text-base">
+                                                <Flame className="h-4 w-4 text-orange-500" />
+                                                Ringkasan Catatan
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <p className="text-sm leading-relaxed text-foreground">
+                                                {note.ai_summary}
+                                            </p>
+                                        </CardContent>
+                                    </Card>
+                                )}
                             </div>
-
-                            {/* AI Summary Section */}
-                            {note?.ai_summary && (
-                                <Card className="border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/20">
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2 text-base">
-                                            <Flame className="h-4 w-4 text-orange-500" />
-                                            Ringkasan AI
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <p className="text-sm leading-relaxed text-foreground">
-                                            {note.ai_summary}
-                                        </p>
-                                    </CardContent>
-                                </Card>
-                            )}
                         </div>
 
                         {/* Sidebar */}
-                        <div className="w-full space-y-4 lg:w-80 lg:flex-shrink-0">
-                            {/* Settings Card */}
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-base">Pengaturan</CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label>Status</Label>
-                                        {/* Hidden input to ensure status is sent with form data */}
-                                        <input
-                                            type="hidden"
-                                            name="status"
-                                            value={form.data.status}
-                                        />
-                                        <select
-                                            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                                            value={form.data.status}
-                                            onChange={(e) => form.setData('status', e.target.value)}
-                                        >
-                                            <option value="draft">Draft</option>
-                                            <option value="published">Published</option>
-                                            <option value="archived">Archived</option>
-                                        </select>
+                        <aside className="hidden lg:block w-80 border-l border-border/50 bg-muted/20 overflow-y-auto">
+                            <div className="sticky top-0 bg-background/95 backdrop-blur-sm border-b border-border/50 px-5 py-4">
+                                <h3 className="font-semibold flex items-center gap-2.5 text-sm">
+                                    <div className="p-1.5 rounded-md bg-primary/10">
+                                        <Settings className="h-3.5 w-3.5 text-primary" />
                                     </div>
+                                    Pengaturan Catatan
+                                </h3>
+                            </div>
+                            <div className="p-5">
+                                <SettingsContent />
+                            </div>
+                        </aside>
 
-                                    <div className="space-y-2">
-                                        <Label>Visibilitas</Label>
-                                        {/* Hidden input to ensure visibility is sent with form data */}
-                                        <input
-                                            type="hidden"
-                                            name="visibility"
-                                            value={form.data.visibility}
-                                        />
-                                        <select
-                                            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                                            value={form.data.visibility}
-                                            onChange={(e) => form.setData('visibility', e.target.value)}
-                                        >
-                                            <option value="private">Private</option>
-                                            <option value="public">Public</option>
-                                        </select>
+                        {/* Mobile: Settings*/}
+                        <div className="lg:hidden fixed bottom-4 right-4 z-50">
+                            <Sheet>
+                                <SheetTrigger asChild>
+                                    <Button size="icon" className="h-12 w-12 rounded-full shadow-lg">
+                                        <Settings className="h-5 w-5" />
+                                    </Button>
+                                </SheetTrigger>
+                                <SheetContent className="overflow-y-auto">
+                                    <SheetHeader>
+                                        <SheetTitle>Pengaturan Catatan</SheetTitle>
+                                    </SheetHeader>
+                                    <div className="mt-6">
+                                        <SettingsContent />
                                     </div>
-
-                                    <div className="space-y-2">
-                                        <Label>Excerpt / Ringkasan</Label>
-                                        <textarea
-                                            className="min-h-[80px] w-full rounded-md border bg-background px-3 py-2 text-sm"
-                                            placeholder="Ringkasan singkat catatan..."
-                                            value={form.data.excerpt ?? ''}
-                                            onChange={(e) => form.setData('excerpt', e.target.value)}
-                                        />
-                                        <InputError message={form.errors.excerpt} />
-                                    </div>
-
-                                    <AttachmentsPanel
-                                        note={note}
-                                        uploadedFileName={uploadedFileName}
-                                        onFileChange={handleFileChange}
-                                        form={form}
-                                    />
-
-
-
-                                    {/* AI Processing */}
-                                    <div className="flex items-center gap-2 rounded-md border p-3">
-                                        <Checkbox
-                                            id="process_ai"
-                                            checked={form.data.process_ai}
-                                            onCheckedChange={(value) => form.setData('process_ai', Boolean(value))}
-                                        />
-                                        <Label htmlFor="process_ai" className="flex flex-1 items-center gap-2 cursor-pointer">
-                                            <Flame className="h-4 w-4 text-orange-500" />
-                                            <span className="text-sm">Proses AI (ringkasan & flashcard)</span>
-                                        </Label>
-                                    </div>
-
-                                    {/* AI Status */}
-                                    {note?.ai_status && (
-                                        <div className="rounded-md border p-3">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <span className="text-xs font-medium text-muted-foreground">
-                                                    Status AI:
-                                                </span>
-                                                <Badge
-                                                    variant={
-                                                        note.ai_status === 'completed'
-                                                            ? 'default'
-                                                            : note.ai_status === 'processing' || note.ai_status === 'queued'
-                                                                ? 'secondary'
-                                                                : note.ai_status === 'failed'
-                                                                    ? 'destructive'
-                                                                    : 'outline'
-                                                    }
-                                                    className="text-xs"
-                                                >
-                                                    {note.ai_status === 'completed' && 'Selesai'}
-                                                    {note.ai_status === 'processing' && 'Memproses...'}
-                                                    {note.ai_status === 'queued' && 'Antrian'}
-                                                    {note.ai_status === 'failed' && 'Gagal'}
-                                                </Badge>
-                                            </div>
-                                            {note.ai_completed_at && (
-                                                <p className="text-xs text-muted-foreground">
-                                                    Selesai: {new Date(note.ai_completed_at).toLocaleString('id-ID')}
-                                                </p>
-                                            )}
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
-
-                            {/* Tags Card */}
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2 text-base">
-                                        <TagIcon className="h-4 w-4" />
-                                        Tag
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <TagsPanel
-                                        selectedTags={selectedTags}
-                                        toggleTag={toggleTag}
-                                        newTag={newTag}
-                                        setNewTag={setNewTag}
-                                        handleAddCustomTag={handleAddCustomTag}
-                                        availableTags={availableTags}
-                                    />
-                                </CardContent>
-                            </Card>
+                                </SheetContent>
+                            </Sheet>
                         </div>
                     </div>
                 </form>
             </div>
-        </AppLayout>
+        </>
     );
 }

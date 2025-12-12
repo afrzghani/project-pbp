@@ -16,6 +16,7 @@ class Notification extends Model
         'type',
         'note_id',
         'comment_id',
+        'badge_id',
         'read_at',
     ];
 
@@ -27,6 +28,7 @@ class Notification extends Model
     const TYPE_LIKE = 'like';
     const TYPE_COMMENT = 'comment';
     const TYPE_BOOKMARK = 'bookmark';
+    const TYPE_BADGE = 'badge';
 
     /**
      * User yang menerima notifikasi
@@ -58,6 +60,14 @@ class Notification extends Model
     public function comment(): BelongsTo
     {
         return $this->belongsTo(NoteComment::class, 'comment_id');
+    }
+
+    /**
+     * Badge yang terkait (untuk notifikasi badge)
+     */
+    public function badge(): BelongsTo
+    {
+        return $this->belongsTo(Badge::class);
     }
 
     /**
@@ -130,6 +140,18 @@ class Notification extends Model
             'actor_id' => $actorId,
             'type' => self::TYPE_BOOKMARK,
             'note_id' => $noteId,
+        ]);
+    }
+
+    /**
+     * Buat notifikasi untuk badge earned
+     */
+    public static function createForBadge(int $userId, int $badgeId): self
+    {
+        return self::create([
+            'user_id' => $userId,
+            'type' => self::TYPE_BADGE,
+            'badge_id' => $badgeId,
         ]);
     }
 }

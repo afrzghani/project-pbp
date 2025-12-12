@@ -176,6 +176,10 @@ class NoteController extends Controller
             $this->syncTags($note, $data['tags'] ?? []);
             $this->logActivity($user, 'note_created', $note);
 
+            // Check for new badges
+            $badgeService = app(\App\Services\BadgeService::class);
+            $badgeService->checkAndAward($user, 'note_created');
+
             return redirect()
                 ->route('notes.edit', $note)
                 ->with('flash.banner', 'Catatan berhasil dibuat.');
@@ -588,11 +592,6 @@ class NoteController extends Controller
 
     private function dispatchAiJob(int $noteId): void
     {
-        // Dispatch AI processing job
-        // Note: If QUEUE_CONNECTION=database, queue worker must be running:
-        //       php artisan queue:work
-        //       Or use: composer dev (which includes queue worker)
-        //       Or set QUEUE_CONNECTION=sync in .env for synchronous processing
         ProcessNoteAiJob::dispatch($noteId);
     }
 

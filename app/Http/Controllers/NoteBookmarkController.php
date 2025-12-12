@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Note;
 use App\Models\NoteBookmark;
 use App\Models\Notification;
+use App\Services\BadgeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -28,6 +29,9 @@ class NoteBookmarkController extends Controller
                 $user->id,
                 $note->id
             );
+
+            $badgeService = app(BadgeService::class);
+            $badgeService->checkAndAward($note->user, 'bookmark_received');
         }
 
         return response()->json([

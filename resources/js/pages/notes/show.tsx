@@ -300,7 +300,7 @@ export default function NoteShow({ note, isOwner = false }: NoteShowProps) {
                             {isOwner ? (
                                 <>
                                     <Button asChild variant="outline" size="sm">
-                                        <Link href={`/notes/${note.id}/edit`}>
+                                        <Link href={`/notes/${note.slug}/edit`}>
                                             <Edit className="mr-2 h-4 w-4" />
                                             Edit
                                         </Link>
@@ -332,7 +332,7 @@ export default function NoteShow({ note, isOwner = false }: NoteShowProps) {
                                                 className="gap-2"
                                                 asChild
                                             >
-                                                <Link href={`/notes/${note.id}#comments`}>
+                                                <Link href={`/notes/${note.slug}#comments`}>
                                                     <MessageCircle className="h-4 w-4" />
                                                     {note.comments_count ?? 0}
                                                 </Link>

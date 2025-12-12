@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Badge;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -16,17 +17,31 @@ class ProfilePageController extends Controller
 
     public function show(Request $request, User $user): Response
     {
-        // Load stats and notes
         $user->loadCount(['notes' => function ($query) {
             $query->visiblePublic();
         }]);
 
         $recentNotes = $user->notes()
-            ->with(['user', 'tags']) // Eager load user and tags
+            ->with(['user', 'tags'])
             ->visiblePublic()
             ->latest()
             ->take(5)
             ->get();
+
+        // Load user badges
+        $badges = $user->badges()->limit(20)->get()->map(function ($badge) {
+            return [
+                'id' => $badge->id,
+                'slug' => $badge->slug,
+                'name' => $badge->name,
+                'description' => $badge->description,
+                'icon' => $badge->icon,
+                'tier' => $badge->tier,
+                'category' => $badge->category,
+                'earned' => true,
+                'awarded_at' => $badge->pivot->awarded_at,
+            ];
+        });
 
         return Inertia::render('profile/show', [
             'profileUser' => array_merge($user->toArray(), [
@@ -38,6 +53,12 @@ class ProfilePageController extends Controller
             ],
             'recentNotes' => $recentNotes,
             'isOwnProfile' => $request->user()?->id === $user->id,
+            'badges' => $badges,
+            'badgeStats' => [
+                'earned' => $user->badges()->count(),
+                'total' => Badge::count(),
+            ],
         ]);
     }
 }
+
