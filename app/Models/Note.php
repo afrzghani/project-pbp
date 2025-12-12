@@ -96,6 +96,11 @@ class Note extends Model
         return $this->hasMany(NoteAttachment::class);
     }
 
+    public function views(): HasMany
+    {
+        return $this->hasMany(NoteView::class);
+    }
+
     public function scopeVisiblePublic($query)
     {
         return $query->where('status', 'published')

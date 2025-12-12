@@ -152,6 +152,7 @@ class DashboardController extends Controller
     {
         return [
             'search' => trim((string) $request->query('search', '')),
+            'tab' => $request->query('tab', 'for-you'),
         ];
     }
 
@@ -186,7 +187,58 @@ class DashboardController extends Controller
             });
         });
 
-        $query->orderByDesc('published_at');
+        // Apply tab-specific sorting
+        $tab = $filters['tab'] ?? 'for-you';
+
+        switch ($tab) {
+            case 'for-you':
+                // Get user's accessed tag IDs from viewed notes
+                $accessedTagIds = NoteView::where('user_id', $user->id)
+                    ->join('note_note_tag', 'note_views.note_id', '=', 'note_note_tag.note_id')
+                    ->pluck('note_note_tag.note_tag_id')
+                    ->unique()
+                    ->toArray();
+
+                // Score-based ordering:
+                // Priority 1: Same prodi AND university (score 100)
+                // Priority 2: Same prodi different university (score 50)
+                // Priority 3: Has tags user accessed (score 10)
+                $query->selectRaw('
+                    notes.*,
+                    CASE
+                        WHEN notes.program_study_id = ? AND notes.university_id = ? THEN 100
+                        WHEN notes.program_study_id = ? THEN 50
+                        ELSE 0
+                    END +
+                    CASE
+                        WHEN EXISTS (SELECT 1 FROM note_note_tag WHERE note_note_tag.note_id = notes.id AND note_note_tag.note_tag_id IN (' . (count($accessedTagIds) > 0 ? implode(',', array_map('intval', $accessedTagIds)) : '0') . ')) THEN 10
+                        ELSE 0
+                    END as relevance_score
+                ', [$user->program_study_id, $user->university_id, $user->program_study_id])
+                    ->orderByDesc('relevance_score')
+                    ->orderByDesc('published_at');
+                break;
+
+            case 'trending':
+                // Score = likes * 3 + comments * 2 + views in last 7 days
+                // PostgreSQL requires full subqueries in ORDER BY, not aliases
+                $sevenDaysAgo = Carbon::now()->subDays(7)->toDateTimeString();
+
+                $query->orderByRaw('
+                    (
+                        (SELECT COUNT(*) FROM note_likes WHERE note_likes.note_id = notes.id AND note_likes.created_at >= ?) * 3 +
+                        (SELECT COUNT(*) FROM note_comments WHERE note_comments.note_id = notes.id AND note_comments.created_at >= ?) * 2 +
+                        (SELECT COUNT(*) FROM note_views WHERE note_views.note_id = notes.id AND note_views.viewed_at >= ?)
+                    ) DESC
+                ', [$sevenDaysAgo, $sevenDaysAgo, $sevenDaysAgo])
+                    ->orderByDesc('published_at');
+                break;
+
+            case 'latest':
+            default:
+                $query->orderByDesc('published_at');
+                break;
+        }
 
         return $query->paginate(10)->withQueryString()->through(function (Note $note) {
             return [

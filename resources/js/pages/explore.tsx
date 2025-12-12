@@ -2,12 +2,13 @@ import { FeedTabs } from '@/components/feed/feed-tabs';
 import FeedCard from '@/components/feed/feed-card';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type FeedNote, type FeedPagination } from '@/types';
-import { Head, Link } from '@inertiajs/react';
-import { useState } from 'react';
+import { Head, Link, router } from '@inertiajs/react';
+import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 
 interface ExploreProps {
     feed: FeedPagination;
+    filters: { search?: string; tab?: string };
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -17,8 +18,13 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Explore({ feed }: ExploreProps) {
-    const [activeTab, setActiveTab] = useState('for-you');
+export default function Explore({ feed, filters }: ExploreProps) {
+    const [activeTab, setActiveTab] = useState(filters.tab || 'for-you');
+
+    const handleTabChange = useCallback((tab: string) => {
+        setActiveTab(tab);
+        router.get('/explore', { tab }, { preserveState: true, preserveScroll: true });
+    }, []);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -32,7 +38,7 @@ export default function Explore({ feed }: ExploreProps) {
                         </p>
                     </div>
 
-                    <FeedTabs activeTab={activeTab} onTabChange={setActiveTab} />
+                    <FeedTabs activeTab={activeTab} onTabChange={handleTabChange} />
                 </div>
 
                 <div className="space-y-4">
