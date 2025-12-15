@@ -21,7 +21,8 @@ export default function Welcome() {
                 <meta name="description" content="Buat, kelola, dan bagikan catatan kuliah dengan fitur AI, flashcard, dan leaderboard kampus." />
                 <meta property="og:title" content="NoteStation - Platform Catatan Digital untuk Mahasiswa" />
                 <meta property="og:description" content="Buat, kelola, dan bagikan catatan kuliah." />
-                <meta property="og:image" content="/og-image.png" />
+                <meta property="og:image" content="https://notestation.up.railway.app/og-image.png" />
+                <meta property="og:url" content="https://notestation.up.railway.app" />
             </Head>
             <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-500 to-blue-300 text-white font-sans selection:bg-blue-800 selection:text-white overflow-x-hidden">
 
