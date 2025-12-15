@@ -69,7 +69,9 @@ export default function Explore({ feed, filters }: ExploreProps) {
                                     {feed.links?.map((link, index) => {
                                         const label = link.label
                                             .replace('&laquo;', '«')
-                                            .replace('&raquo;', '»');
+                                            .replace('&raquo;', '»')
+                                            .replace('Previous', 'Sebelumnya')
+                                            .replace('Next', 'Selanjutnya');
 
                                         if (!link.url) {
                                             return (

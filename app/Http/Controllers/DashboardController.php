@@ -274,7 +274,7 @@ class DashboardController extends Controller
                 break;
         }
 
-        return $query->paginate(10)->withQueryString()->through(function (Note $note) {
+        return $query->paginate(9)->withQueryString()->through(function (Note $note) {
             return [
                 'id' => $note->id,
                 'slug' => $note->slug,

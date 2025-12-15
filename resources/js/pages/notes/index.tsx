@@ -97,7 +97,7 @@ export default function NotesIndex({ notes }: NotesPageProps) {
                     <div className="absolute -bottom-12 -left-12 size-48 rounded-full bg-indigo-500/20 blur-2xl" />
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-2">
                     {notes.data.length > 0 ? (
                         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                             {notes.data.map((note) => (

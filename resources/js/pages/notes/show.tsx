@@ -282,9 +282,9 @@ export default function NoteShow({ note, isOwner = false, isReadRoute = false }:
             <div className="flex flex-1 flex-col">
 
                 <div className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75">
-                    <div className="flex items-center justify-between gap-4 px-8 py-4">
+                    <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-8">
                         <div className="flex-1 min-w-0">
-                            <h1 className="text-2xl font-bold tracking-tight">{note.title}</h1>
+                            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{note.title}</h1>
                             <div className="mt-2 flex flex-wrap items-center gap-2">
                                 {note.tags.length > 0 && (
                                     <>
@@ -297,7 +297,7 @@ export default function NoteShow({ note, isOwner = false, isReadRoute = false }:
                                 )}
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                             {isOwner ? (
                                 <>
                                     <Button asChild variant="outline" size="sm">
@@ -321,7 +321,7 @@ export default function NoteShow({ note, isOwner = false, isReadRoute = false }:
                                                 size="sm"
                                                 onClick={handleLike}
                                                 disabled={liking}
-                                                className={cn("gap-2", liked && "bg-red-500 hover:bg-red-600 text-white border-red-500")}
+                                                className={cn("gap-1.5", liked && "bg-red-500 hover:bg-red-600 text-white border-red-500")}
                                             >
                                                 <Heart className={cn("h-4 w-4", liked && "fill-current")} />
                                                 {likesCount}
@@ -330,7 +330,7 @@ export default function NoteShow({ note, isOwner = false, isReadRoute = false }:
                                                 type="button"
                                                 variant="outline"
                                                 size="sm"
-                                                className="gap-2"
+                                                className="gap-1.5"
                                                 asChild
                                             >
                                                 <Link href={`/notes/${note.slug}#comments`}>
@@ -344,7 +344,7 @@ export default function NoteShow({ note, isOwner = false, isReadRoute = false }:
                                                 size="sm"
                                                 onClick={handleBookmark}
                                                 disabled={bookmarking}
-                                                className={cn("gap-2", bookmarked && "bg-blue-500 hover:bg-blue-600 text-white border-blue-500")}
+                                                className={cn("gap-1.5", bookmarked && "bg-blue-500 hover:bg-blue-600 text-white border-blue-500")}
                                             >
                                                 <Bookmark className={cn("h-4 w-4", bookmarked && "fill-current")} />
                                                 {bookmarksCount}
@@ -358,9 +358,9 @@ export default function NoteShow({ note, isOwner = false, isReadRoute = false }:
                 </div>
 
 
-                <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 p-6">
+                <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4 p-4 sm:gap-6 sm:p-6">
 
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground sm:gap-4">
 
                         {!isOwner && note.user && (
                             <>
@@ -373,29 +373,25 @@ export default function NoteShow({ note, isOwner = false, isReadRoute = false }:
                                     </Avatar>
                                     <span className="font-medium text-foreground hover:underline">{note.user.name}</span>
                                 </Link>
-                                <Separator orientation="vertical" className="h-4" />
+                                <Separator orientation="vertical" className="h-4 hidden sm:block" />
                             </>
                         )}
                         <div className="flex items-center gap-1.5">
-                            <span>Dibuat {new Date(note.created_at).toLocaleDateString('id-ID', {
+                            <span className="text-xs sm:text-sm">Dibuat {new Date(note.created_at).toLocaleDateString('id-ID', {
                                 day: 'numeric',
-                                month: 'long',
+                                month: 'short',
                                 year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
                             })}</span>
                         </div>
                         {note.updated_at !== note.created_at && (
                             <>
-                                <Separator orientation="vertical" className="h-4" />
+                                <Separator orientation="vertical" className="h-4 hidden sm:block" />
                                 <div className="flex items-center gap-1.5">
-                                    <RotateCw className="h-4 w-4" />
-                                    <span>Diperbarui {new Date(note.updated_at).toLocaleDateString('id-ID', {
+                                    <RotateCw className="h-3 w-3 sm:h-4 sm:w-4" />
+                                    <span className="text-xs sm:text-sm">Diperbarui {new Date(note.updated_at).toLocaleDateString('id-ID', {
                                         day: 'numeric',
-                                        month: 'long',
+                                        month: 'short',
                                         year: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit'
                                     })}</span>
                                 </div>
                             </>
@@ -405,17 +401,17 @@ export default function NoteShow({ note, isOwner = false, isReadRoute = false }:
 
                     <Tabs defaultValue="content" className="w-full">
                         <TabsList className="grid w-full grid-cols-3">
-                            <TabsTrigger value="content" className="gap-2 cursor-pointer">
-                                <FileText className="h-4 w-4" />
+                            <TabsTrigger value="content" className="gap-1 sm:gap-2 cursor-pointer text-xs sm:text-sm">
+                                <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                 Catatan
                             </TabsTrigger>
-                            <TabsTrigger value="attachments" className="gap-2 cursor-pointer">
-                                <Paperclip className="h-4 w-4" />
-                                Lampiran ({(note.attachments?.length ?? 0) + (note.file_url && !note.attachments?.length ? 1 : 0)})
+                            <TabsTrigger value="attachments" className="gap-1 sm:gap-2 cursor-pointer text-xs sm:text-sm">
+                                <Paperclip className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                <span>Lampiran ({(note.attachments?.length ?? 0) + (note.file_url && !note.attachments?.length ? 1 : 0)})</span>
                             </TabsTrigger>
-                            <TabsTrigger value="comments" className="gap-2 cursor-pointer">
-                                <MessageCircle className="h-4 w-4" />
-                                Komentar ({commentsCount})
+                            <TabsTrigger value="comments" className="gap-1 sm:gap-2 cursor-pointer text-xs sm:text-sm">
+                                <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                <span>Komentar ({commentsCount})</span>
                             </TabsTrigger>
                         </TabsList>
 
@@ -624,7 +620,7 @@ export default function NoteShow({ note, isOwner = false, isReadRoute = false }:
                                                         <Badge variant="secondary" className="uppercase">
                                                             {attachment.file_type || 'FILE'}
                                                         </Badge>
-                                                        <span className="text-sm font-medium truncate max-w-[200px] sm:max-w-xs">
+                                                        <span className="text-sm font-medium truncate max-w-[120px] md:max-w-xs">
                                                             {attachment.file_name}
                                                         </span>
                                                     </div>

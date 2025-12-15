@@ -143,7 +143,7 @@ export default function QuickStats({ streak, notesThisWeek, leaderboard }: Quick
                                                             }`}>
                                                             #{idx + 1}
                                                         </span>
-                                                        <span className="text-foreground truncate max-w-[100px]">{user.name}</span>
+                                                        <span className="text-foreground truncate max-w-[200px] sm:max-w-xs">{user.name}</span>
                                                     </div>
                                                     <span className="font-semibold text-purple-600">{user.total_points}</span>
                                                 </div>

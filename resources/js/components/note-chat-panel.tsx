@@ -204,7 +204,7 @@ export function NoteChatPanel({ noteSlug, noteTitle, isOpen, onClose }: NoteChat
 
 export function AiChatFab({ onClick, isOpen }: { onClick: () => void; isOpen: boolean }) {
     return (
-        <div className="fixed bottom-6 right-16 z-50">
+        <div className="fixed bottom-20 right-4 z-50 md:bottom-6 md:right-16">
             <button
                 onClick={onClick}
                 className={cn(

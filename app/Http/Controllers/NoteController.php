@@ -29,7 +29,7 @@ class NoteController extends Controller
             ->notes()
             ->with('tags')
             ->latest()
-            ->paginate(10)
+            ->paginate(9)
             ->through(function (Note $note) {
                 return [
                     'id' => $note->id,
