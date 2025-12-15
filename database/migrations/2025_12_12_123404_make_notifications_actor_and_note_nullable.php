@@ -12,23 +12,23 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Skip if columns are already nullable (migration already ran)
+        try {
+            Schema::table('notifications', function (Blueprint $table) {
+                $table->dropForeign(['actor_id']);
+                $table->dropForeign(['note_id']);
+            });
 
-        
-        Schema::table('notifications', function (Blueprint $table) {
+            DB::statement('ALTER TABLE notifications ALTER COLUMN actor_id DROP NOT NULL');
+            DB::statement('ALTER TABLE notifications ALTER COLUMN note_id DROP NOT NULL');
 
-            $table->dropForeign(['actor_id']);
-            $table->dropForeign(['note_id']);
-        });
-
-
-        DB::statement('ALTER TABLE notifications ALTER COLUMN actor_id DROP NOT NULL');
-        DB::statement('ALTER TABLE notifications ALTER COLUMN note_id DROP NOT NULL');
-
-        Schema::table('notifications', function (Blueprint $table) {
-
-            $table->foreign('actor_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('note_id')->references('id')->on('notes')->onDelete('cascade');
-        });
+            Schema::table('notifications', function (Blueprint $table) {
+                $table->foreign('actor_id')->references('id')->on('users')->onDelete('cascade');
+                $table->foreign('note_id')->references('id')->on('notes')->onDelete('cascade');
+            });
+        } catch (\Exception $e) {
+            // Migration already applied, skip
+        }
     }
 
     /**

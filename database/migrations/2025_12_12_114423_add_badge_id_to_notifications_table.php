@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('notifications', function (Blueprint $table) {
-            $table->foreignId('badge_id')->nullable()->after('comment_id')->constrained()->onDelete('cascade');
-        });
+        if (!Schema::hasColumn('notifications', 'badge_id')) {
+            Schema::table('notifications', function (Blueprint $table) {
+                $table->foreignId('badge_id')->nullable()->after('comment_id')->constrained()->onDelete('cascade');
+            });
+        }
     }
 
     /**
