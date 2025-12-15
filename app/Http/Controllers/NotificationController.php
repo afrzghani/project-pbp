@@ -44,54 +44,62 @@ class NotificationController extends Controller
 
     public function getNotifications(Request $request)
     {
-        $limit = $request->input('limit', 10);
-        
-        $notifications = Notification::where('user_id', Auth::id())
-            ->with(['actor:id,name,avatar', 'note:id,title,slug', 'badge'])
-            ->orderByDesc('created_at')
-            ->limit($limit)
-            ->get()
-            ->map(function ($notification) {
-                $result = [
-                    'id' => $notification->id,
-                    'type' => $notification->type,
-                    'read_at' => $notification->read_at,
-                    'created_at' => $notification->created_at->diffForHumans(),
-                ];
-
-                if ($notification->type === 'badge' && $notification->badge) {
-                    $result['badge'] = [
-                        'id' => $notification->badge->id,
-                        'name' => $notification->badge->name,
-                        'description' => $notification->badge->description,
-                        'icon' => $notification->badge->icon,
-                        'tier' => $notification->badge->tier,
-                        'slug' => $notification->badge->slug,
+        try {
+            $limit = $request->input('limit', 10);
+            
+            $notifications = Notification::where('user_id', Auth::id())
+                ->with(['actor:id,name,avatar', 'note:id,title,slug', 'badge'])
+                ->orderByDesc('created_at')
+                ->limit($limit)
+                ->get()
+                ->map(function ($notification) {
+                    $result = [
+                        'id' => $notification->id,
+                        'type' => $notification->type,
+                        'read_at' => $notification->read_at,
+                        'created_at' => $notification->created_at?->diffForHumans() ?? '',
                     ];
-                } else {
-                    $result['actor'] = $notification->actor ? [
-                        'id' => $notification->actor->id,
-                        'name' => $notification->actor->name,
-                        'avatar_url' => $notification->actor->avatarUrl,
-                    ] : null;
-                    $result['note'] = $notification->note ? [
-                        'id' => $notification->note->id,
-                        'title' => $notification->note->title,
-                        'slug' => $notification->note->slug,
-                    ] : null;
-                }
 
-                return $result;
-            });
+                    if ($notification->type === 'badge' && $notification->badge) {
+                        $result['badge'] = [
+                            'id' => $notification->badge->id,
+                            'name' => $notification->badge->name,
+                            'description' => $notification->badge->description,
+                            'icon' => $notification->badge->icon,
+                            'tier' => $notification->badge->tier,
+                            'slug' => $notification->badge->slug,
+                        ];
+                    } else {
+                        $result['actor'] = $notification->actor ? [
+                            'id' => $notification->actor->id,
+                            'name' => $notification->actor->name,
+                            'avatar_url' => $notification->actor->avatarUrl,
+                        ] : null;
+                        $result['note'] = $notification->note ? [
+                            'id' => $notification->note->id,
+                            'title' => $notification->note->title,
+                            'slug' => $notification->note->slug,
+                        ] : null;
+                    }
 
-        $unreadCount = Notification::where('user_id', Auth::id())
-            ->unread()
-            ->count();
+                    return $result;
+                });
 
-        return response()->json([
-            'notifications' => $notifications,
-            'unread_count' => $unreadCount,
-        ]);
+            $unreadCount = Notification::where('user_id', Auth::id())
+                ->unread()
+                ->count();
+
+            return response()->json([
+                'notifications' => $notifications,
+                'unread_count' => $unreadCount,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Notification fetch error: ' . $e->getMessage());
+            return response()->json([
+                'notifications' => [],
+                'unread_count' => 0,
+            ]);
+        }
     }
 
     public function markAsRead(Notification $notification)

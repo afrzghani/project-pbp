@@ -388,7 +388,7 @@ class DatabaseSeeder extends Seeder
                 'domain_aliases' => $data['domain_aliases'],
                 'singkatan' => $data['singkatan'] ?? null,
                 'kota' => $data['kota'] ?? null,
-                'aktif' => true,
+                'aktif' => 'true',
             ];
 
             /** @var University $university */
@@ -412,7 +412,7 @@ class DatabaseSeeder extends Seeder
                         'nama' => $program['nama'],
                         'slug' => Str::slug($program['nama']),
                         'jenjang' => $program['jenjang'] ?? null,
-                        'aktif' => true,
+                        'aktif' => 'true',
                     ]
                 );
             }
@@ -430,7 +430,7 @@ class DatabaseSeeder extends Seeder
                     'university_id' => $defaultProgram->university_id,
                     'program_study_id' => $defaultProgram->id,
                     'cohort_year' => '2021',
-                    'profile_completed' => true,
+                    'profile_completed' => 'true',
                     'profile_completed_at' => now(),
                 ]
             );
