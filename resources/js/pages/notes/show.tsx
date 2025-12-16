@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { type BreadcrumbItem } from '@/types';
 import { show as showProfile } from '@/routes/profile';
-import { Edit, Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Shuffle, RefreshCcw, Flame, Layers, Download, Eye, EyeOff, RotateCw, ArrowLeft, Tag as TagIcon, Heart, MessageCircle, Bookmark, FileText, X, Paperclip } from 'lucide-react';
+import { Edit, Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Shuffle, RefreshCcw, Flame, Layers, Download, Eye, EyeOff, RotateCw, ArrowLeft, Tag as TagIcon, Heart, MessageCircle, Bookmark, FileText, X, Paperclip, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { CommentSection } from '@/components/comment-section';
@@ -97,6 +97,10 @@ export default function NoteShow({ note, isOwner = false, isReadRoute = false }:
     const [viewingPdfUrl, setViewingPdfUrl] = useState<string | null>(null);
     const [commentsCount, setCommentsCount] = useState(note.comments_count ?? 0);
     const [chatOpen, setChatOpen] = useState(false);
+    const [deleteAttachmentDialogOpen, setDeleteAttachmentDialogOpen] = useState(false);
+    const [attachmentToDelete, setAttachmentToDelete] = useState<{ id: number; name: string } | null>(null);
+    const [deletingAttachment, setDeletingAttachment] = useState(false);
+    const [deleteNoteDialogOpen, setDeleteNoteDialogOpen] = useState(false);
 
     const isPublic = note.visibility === 'public' && note.status === 'published';
     const canInteract = isPublic && !isOwner;
@@ -156,10 +160,10 @@ export default function NoteShow({ note, isOwner = false, isReadRoute = false }:
     }, [flashcardsOpen, isFlipped, currentFlashcardIndex, displayFlashcards.length]);
 
     const handleDelete = () => {
-        if (!confirm('Apakah Anda yakin ingin menghapus catatan ini?')) {
-            return;
-        }
+        setDeleteNoteDialogOpen(true);
+    };
 
+    const handleConfirmDeleteNote = () => {
         setDeleting(true);
         router.delete(`/notes/${note.slug}`, {
             onFinish: () => setDeleting(false),
@@ -642,11 +646,8 @@ export default function NoteShow({ note, isOwner = false, isReadRoute = false }:
                                                                 size="sm"
                                                                 className="text-destructive hover:text-destructive hover:bg-destructive/10"
                                                                 onClick={() => {
-                                                                    if (confirm('Hapus lampiran ini?')) {
-                                                                        router.delete(`/attachments/${attachment.id}`, {
-                                                                            preserveScroll: true,
-                                                                        });
-                                                                    }
+                                                                    setAttachmentToDelete({ id: attachment.id, name: attachment.file_name });
+                                                                    setDeleteAttachmentDialogOpen(true);
                                                                 }}
                                                             >
                                                                 <Trash2 className="h-4 w-4" />
@@ -809,6 +810,180 @@ export default function NoteShow({ note, isOwner = false, isReadRoute = false }:
                 isOpen={chatOpen}
                 onClose={() => setChatOpen(false)}
             />
+
+            {deleteAttachmentDialogOpen && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteAttachmentDialogOpen(false);
+                    }}
+                >
+                    <div
+                        className="relative w-full max-w-md mx-4 animate-in fade-in zoom-in duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-2xl overflow-hidden">
+                            <div className="relative bg-white dark:bg-neutral-800 p-6 text-black dark:text-white">
+                                <div className="absolute top-3 right-3">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setDeleteAttachmentDialogOpen(false);
+                                        }}
+                                        className="rounded-full p-1.5 hover:bg-neutral-200/40 dark:hover:bg-neutral-700/30 transition-colors"
+                                    >
+                                        <X className="h-5 w-5" />
+                                    </button>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <div>
+                                        <h3 className="text-xl font-bold">Hapus Lampiran?</h3>
+                                        <p className="text-sm text-muted-foreground">Lampiran akan dihapus secara permanen</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-6 space-y-2">
+                                <div className="space-y-2">
+                                    <p className="text-sm text-muted-foreground">
+                                        Apakah kamu yakin ingin menghapus lampiran berikut?
+                                    </p>
+                                    <p className="font-semibold text-base bg-muted/50 rounded-lg p-3 border border-border/50 truncate">
+                                        {attachmentToDelete?.name}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="bg-muted/30 px-6 py-4 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
+                                <Button
+                                    variant="outline"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDeleteAttachmentDialogOpen(false);
+                                    }}
+                                    className="w-full sm:w-auto"
+                                >
+                                    Batal
+                                </Button>
+                                <Button
+                                    variant="destructive"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (!attachmentToDelete) return;
+                                        setDeletingAttachment(true);
+                                        router.delete(`/attachments/${attachmentToDelete.id}`, {
+                                            preserveScroll: true,
+                                            onFinish: () => {
+                                                setDeletingAttachment(false);
+                                                setDeleteAttachmentDialogOpen(false);
+                                                setAttachmentToDelete(null);
+                                            },
+                                        });
+                                    }}
+                                    disabled={deletingAttachment}
+                                    className="w-full sm:w-auto bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+                                >
+                                    {deletingAttachment ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Menghapus...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Ya, hapus sekarang
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {deleteNoteDialogOpen && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteNoteDialogOpen(false);
+                    }}
+                >
+                    <div
+                        className="relative w-full max-w-md mx-4 animate-in fade-in zoom-in duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-2xl overflow-hidden">
+                            <div className="relative bg-white dark:bg-neutral-800 p-6 text-black dark:text-white">
+                                <div className="absolute top-3 right-3">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setDeleteNoteDialogOpen(false);
+                                        }}
+                                        className="rounded-full p-1.5 hover:bg-neutral-200/40 dark:hover:bg-neutral-700/30 transition-colors"
+                                    >
+                                        <X className="h-5 w-5" />
+                                    </button>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <div>
+                                        <h3 className="text-xl font-bold">Hapus Catatan?</h3>
+                                        <p className="text-sm text-muted-foreground">Catatan akan dihapus secara permanen</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-6 space-y-2">
+                                <div className="space-y-2">
+                                    <p className="text-sm text-muted-foreground">
+                                        Apakah kamu yakin ingin menghapus catatan berikut?
+                                    </p>
+                                    <p className="font-semibold text-base bg-muted/50 rounded-lg p-3 border border-border/50">
+                                        {note.title}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="bg-muted/30 px-6 py-4 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
+                                <Button
+                                    variant="outline"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDeleteNoteDialogOpen(false);
+                                    }}
+                                    className="w-full sm:w-auto"
+                                >
+                                    Batal
+                                </Button>
+                                <Button
+                                    variant="destructive"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleConfirmDeleteNote();
+                                    }}
+                                    disabled={deleting}
+                                    className="w-full sm:w-auto bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+                                >
+                                    {deleting ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Menghapus...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Ya, hapus sekarang
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </AppLayout >
     );
 }
+

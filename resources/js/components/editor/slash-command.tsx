@@ -2,7 +2,7 @@ import { Extension } from '@tiptap/core';
 import Suggestion from '@tiptap/suggestion';
 import { ReactRenderer } from '@tiptap/react';
 import tippy from 'tippy.js';
-import {Heading1,Heading2,Heading3,List,ListOrdered,Quote,Code,Image as ImageIcon,Table,Type,} from 'lucide-react';
+import { Heading1, Heading2, Heading3, List, ListOrdered, Quote, Code, Image as ImageIcon, Table, Type, } from 'lucide-react';
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 
 const CommandList = forwardRef((props: any, ref) => {
@@ -178,17 +178,57 @@ const getSuggestionItems = ({ query }: { query: string }) => {
             title: 'Image',
             icon: <ImageIcon className="h-3 w-3" />,
             command: ({ editor, range }: any) => {
-                const url = window.prompt('Enter image URL');
-                if (url) {
-                    editor.chain().focus().deleteRange(range).setImage({ src: url }).run();
-                }
-            },
-        },
-        {
-            title: 'Table',
-            icon: <Table className="h-3 w-3" />,
-            command: ({ editor, range }: any) => {
-                editor.chain().focus().deleteRange(range).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = async (e) => {
+                    const file = (e.target as HTMLInputElement).files?.[0];
+                    if (!file) return;
+
+                    try {
+                        const formData = new FormData();
+                        formData.append('image', file);
+
+                        const getCsrfToken = () => {
+                            const metaToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
+                            if (metaToken) return metaToken;
+
+                            const cookies = document.cookie.split(';');
+                            for (const cookie of cookies) {
+                                const [name, value] = cookie.trim().split('=');
+                                if (name === 'XSRF-TOKEN') {
+                                    return decodeURIComponent(value);
+                                }
+                            }
+                            return '';
+                        };
+
+                        const response = await fetch('/upload/image', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': getCsrfToken(),
+                                'X-XSRF-TOKEN': getCsrfToken(),
+                                'X-Requested-With': 'XMLHttpRequest',
+                            },
+                            credentials: 'same-origin',
+                            body: formData,
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.success && data.url) {
+                                editor.chain().focus().deleteRange(range).setImage({ src: data.url }).run();
+                            }
+                        } else {
+                            console.error('Upload failed:', response.status, response.statusText);
+                            alert('Gagal mengupload gambar');
+                        }
+                    } catch (error) {
+                        console.error('Error uploading image:', error);
+                        alert('Terjadi kesalahan saat mengupload gambar');
+                    }
+                };
+                input.click();
             },
         },
     ].filter((item) => item.title.toLowerCase().includes(query.toLowerCase()));

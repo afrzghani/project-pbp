@@ -139,7 +139,7 @@ export default function ProfileShow({ profileUser, stats, recentNotes, isOwnProf
                         {recentNotes.length > 0 ? (
                             <NoteGrid className="mt-0 grid-cols-1 md:grid-cols-2">
                                 {recentNotes.map((note) => (
-                                    <NoteCard key={note.id} note={note} variant="feed" />
+                                    <NoteCard key={note.id} note={note} variant="dashboard" />
                                 ))}
                             </NoteGrid>
                         ) : (

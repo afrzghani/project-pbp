@@ -292,13 +292,6 @@ export default function EditorToolbar({ editor }: { editor: ReturnType<typeof us
                     <Minus size={iconSize} />
                 </ToolbarButton>
                 <ToolbarButton
-                    onClick={setLink}
-                    isActive={editor.isActive('link')}
-                    title="Insert Link"
-                >
-                    <Link2 size={iconSize} />
-                </ToolbarButton>
-                <ToolbarButton
                     onClick={handleImageUpload}
                     title="Upload Image"
                 >

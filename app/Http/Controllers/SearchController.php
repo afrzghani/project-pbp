@@ -11,6 +11,7 @@ class SearchController extends Controller
     public function results(Request $request)
     {
         $q = $request->query('q', '');
+        $userId = auth()->id();
         $notes = [];
         if ($q) {
             $notes = Note::query()
@@ -37,7 +38,7 @@ class SearchController extends Controller
                 ->orderByDesc('created_at')
                 ->limit(30)
                 ->get()
-                ->map(function ($note) {
+                ->map(function ($note) use ($userId) {
                     return [
                         'id' => $note->id,
                         'slug' => $note->slug,
@@ -58,10 +59,10 @@ class SearchController extends Controller
                             'name' => $tag->name,
                             'slug' => $tag->slug,
                         ]),
-                        'liked' => false,
+                        'liked' => $userId ? $note->likes()->where('user_id', $userId)->exists() : false,
                         'likes_count' => $note->likes_count ?? 0,
                         'comments_count' => $note->comments_count ?? 0,
-                        'bookmarked' => false,
+                        'bookmarked' => $userId ? $note->bookmarks()->where('user_id', $userId)->exists() : false,
                         'bookmarks_count' => $note->bookmarks_count ?? 0,
                         'published_at' => optional($note->published_at)->toIso8601String(),
                         'created_at' => optional($note->created_at)->toIso8601String(),

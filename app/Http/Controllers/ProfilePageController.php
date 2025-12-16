@@ -24,14 +24,21 @@ class ProfilePageController extends Controller
 
         $recentNotes = $user->notes()
             ->with(['tags'])
+            ->withCount(['likes', 'bookmarks', 'comments'])
             ->visiblePublic()
             ->latest()
             ->take(5)
-            ->get();
-
-        $recentNotes->each(function ($note) use ($user) {
-            $note->setRelation('user', $user);
-        });
+            ->get()
+            ->map(function ($note) use ($user) {
+                $noteArray = $note->toArray();
+                $noteArray['user'] = [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'avatar_url' => $user->avatar_url,
+                    'program_study' => $user->programStudy?->nama,
+                ];
+                return $noteArray;
+            });
 
 
         $badges = $user->badges()->limit(20)->get()->map(function ($badge) {
